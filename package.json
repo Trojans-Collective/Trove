@@ -1,0 +1,27 @@
+{
+  "name": "trove",
+  "version": "1.0.0",
+  "description": "Building a real world product under Trojans Forge!",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Bhargav-Bhamare/Trove.git"
+  },
+  "keywords": [],
+  "author": "Bhargav Bhamare",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Bhargav-Bhamare/Trove/issues"
+  },
+  "homepage": "https://github.com/Bhargav-Bhamare/Trove#readme",
+  "dependencies": {
+    "ejs": "^5.0.2",
+    "ejs-mate": "^4.0.0",
+    "express": "^5.2.1",
+    "mongoose": "^9.6.2"
+  }
+}
