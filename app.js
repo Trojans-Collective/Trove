@@ -17,6 +17,10 @@ app.get("/", (req,res) =>{
     res.render("landing.ejs");
 });
 
+app.get("/signin", (req,res) =>{
+    res.render("signin.ejs");
+});
+
 //Server Check
 app.listen(8080, () => {
     console.log("Listening to port successfully!");

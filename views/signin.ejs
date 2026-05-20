@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TROVE — Enter the Battleground</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cinzel:wght@400;600;700;900&family=Cinzel+Decorative:wght@400;700&family=DM+Mono:wght@300;400;500&family=Crimson+Pro:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ══════════════════ TOKENS ══════════════════ */
+    :root {
+      --c-black:  #000000;
+      --c-cyan:   #92DCE5;
+      --c-cream:  #EEE5E9;
+      --c-grey:   #7C7C7C;
+      --c-red:    #D64933;
+      --ease:     cubic-bezier(.77,0,.18,1);
+    }
+    [data-theme="dark"] {
+      --bg:        #000000;
+      --bg2:       #080808;
+      --surface:   #0e0e0e;
+      --surface2:  #161616;
+      --border:    rgba(146,220,229,.1);
+      --border-h:  rgba(146,220,229,.3);
+      --text:      #EEE5E9;
+      --text-dim:  rgba(238,229,233,.55);
+      --text-muted:#7C7C7C;
+      --accent:    #92DCE5;
+      --accent2:   #D64933;
+      --glow:      rgba(146,220,229,.15);
+      --glow2:     rgba(214,73,51,.15);
+      --ink:       rgba(146,220,229,.04);
+    }
+    [data-theme="light"] {
+      --bg:        #EEE5E9;
+      --bg2:       #e0d6db;
+      --surface:   #f5f0f2;
+      --surface2:  #ffffff;
+      --border:    rgba(0,0,0,.1);
+      --border-h:  rgba(0,100,110,.35);
+      --text:      #000000;
+      --text-dim:  rgba(0,0,0,.55);
+      --text-muted:#7C7C7C;
+      --accent:    #1a7a85;
+      --accent2:   #D64933;
+      --glow:      rgba(0,0,0,.06);
+      --glow2:     rgba(214,73,51,.1);
+      --ink:       rgba(0,0,0,.03);
+    }
+
+    /* ══════════════════ RESET ══════════════════ */
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: 'DM Mono', monospace;
+      background: var(--bg);
+      color: var(--text);
+      transition: background .7s var(--ease), color .7s var(--ease);
+      user-select: none;
+    }
+
+    /* ══════════════════ CANVAS ══════════════════ */
+    #bg-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* ══════════════════ GRAIN OVERLAY ══════════════════ */
+    .grain {
+      position: fixed;
+      inset: -50%;
+      width: 200%; height: 200%;
+      z-index: 1;
+      pointer-events: none;
+      opacity: .025;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      animation: grainShift 0.4s steps(1) infinite;
+    }
+    @keyframes grainShift {
+      0%  { transform: translate(0,0); }
+      25% { transform: translate(-2%,-3%); }
+      50% { transform: translate(3%, 1%); }
+      75% { transform: translate(-1%, 4%); }
+    }
+    [data-theme="dark"] .grain { opacity: .04; }
+
+    /* ══════════════════ LAYOUT SHELL ══════════════════ */
+    .shell {
+      position: relative;
+      z-index: 2;
+      width: 100%; height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    /* ══════════════════ LEFT PANEL ══════════════════ */
+    .panel-left {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 2.4rem 3rem;
+      border-right: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    /* Etched SVG crest background */
+    .panel-left::before {
+      content: '';
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 520px; height: 520px;
+      background: radial-gradient(ellipse at center, var(--glow) 0%, transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    /* Decorative corner marks */
+    .corner-mark {
+      position: absolute;
+      width: 18px; height: 18px;
+      border-color: var(--border-h);
+      border-style: solid;
+    }
+    .corner-mark.tl { top: 1.5rem; left: 1.5rem; border-width: 1px 0 0 1px; }
+    .corner-mark.tr { top: 1.5rem; right: 1.5rem; border-width: 1px 1px 0 0; }
+    .corner-mark.bl { bottom: 1.5rem; left: 1.5rem; border-width: 0 0 1px 1px; }
+    .corner-mark.br { bottom: 1.5rem; right: 1.5rem; border-width: 0 1px 1px 0; }
+
+    /* Logo */
+    .logo-wrap { position: relative; z-index: 1; }
+    .logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.9rem;
+      letter-spacing: .22em;
+      color: var(--accent);
+      text-decoration: none;
+      display: inline-block;
+    }
+    .logo span { color: var(--accent2); }
+    .logo-tag {
+      font-size: .55rem;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-top: .2rem;
+    }
+
+    /* Crest center */
+    .crest-wrap {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .crest-svg {
+      width: 280px;
+      height: auto;
+      opacity: .18;
+      animation: crestFloat 8s ease-in-out infinite;
+      filter: drop-shadow(0 0 30px var(--accent));
+    }
+    [data-theme="light"] .crest-svg { opacity: .1; }
+
+    @keyframes crestFloat {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      33%       { transform: translateY(-10px) rotate(.5deg); }
+      66%       { transform: translateY(5px) rotate(-.3deg); }
+    }
+
+    .crest-title {
+      font-family: 'Cinzel Decorative', serif;
+      font-size: .7rem;
+      letter-spacing: .3em;
+      color: var(--accent);
+      opacity: .7;
+      margin-top: 1.5rem;
+      text-transform: uppercase;
+    }
+
+    /* Rank scroll at bottom of left panel */
+    .rank-scroll {
+      position: relative;
+      z-index: 1;
+    }
+    .rank-scroll-label {
+      font-size: .52rem;
+      letter-spacing: .24em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: .8rem;
+    }
+    .rank-line {
+      display: flex;
+      align-items: center;
+      gap: .7rem;
+      margin-bottom: .4rem;
+      cursor: default;
+    }
+    .rank-pip {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--border-h);
+      flex-shrink: 0;
+      transition: background .3s, transform .3s;
+    }
+    .rank-line:hover .rank-pip { background: var(--accent); transform: scale(1.5); }
+    .rank-name-sm {
+      font-family: 'Cinzel', serif;
+      font-size: .62rem;
+      letter-spacing: .18em;
+      color: var(--text-muted);
+      transition: color .3s;
+    }
+    .rank-line:hover .rank-name-sm { color: var(--accent); }
+    .rank-line.current .rank-pip { background: var(--accent2); }
+    .rank-line.current .rank-name-sm { color: var(--accent2); }
+    .rank-arrow {
+      font-size: .55rem;
+      color: var(--accent2);
+      letter-spacing: .1em;
+    }
+
+    /* Divider line with glyph */
+    .h-divider {
+      display: flex;
+      align-items: center;
+      gap: .8rem;
+      margin: .8rem 0;
+    }
+    .h-divider::before, .h-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+    .h-divider span {
+      font-size: .55rem;
+      color: var(--border-h);
+      letter-spacing: .2em;
+    }
+
+    /* ══════════════════ RIGHT PANEL ══════════════════ */
+    .panel-right {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 4rem;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    /* Theme toggle */
+    .theme-btn {
+      position: absolute;
+      top: 2rem; right: 2rem;
+      width: 48px; height: 26px;
+      border-radius: 99px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      position: absolute;
+      transition: background .4s;
+    }
+    .theme-btn::before {
+      content: '';
+      position: absolute;
+      top: 3px; left: 3px;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: var(--accent);
+      transition: transform .4s cubic-bezier(.34,1.56,.64,1);
+    }
+    [data-theme="light"] .theme-btn::before { transform: translateX(22px); background: var(--accent2); }
+    .theme-btn-label {
+      position: absolute;
+      top: 2rem; right: 5.5rem;
+      font-size: .55rem;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      line-height: 26px;
+    }
+
+    /* Form container */
+    .form-box {
+      width: 100%;
+      max-width: 420px;
+      position: relative;
+    }
+
+    /* Tab switcher */
+    .tab-switcher {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 2.4rem;
+      background: var(--surface);
+    }
+    .tab-btn {
+      padding: .85rem;
+      text-align: center;
+      font-family: 'DM Mono', monospace;
+      font-size: .65rem;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      transition: color .3s, background .3s;
+      position: relative;
+    }
+    .tab-btn.active {
+      color: var(--bg);
+      background: var(--accent);
+    }
+    [data-theme="light"] .tab-btn.active { color: #fff; }
+    .tab-btn:not(.active):hover { color: var(--accent); }
+
+    /* Form heading */
+    .form-heading {
+      margin-bottom: .5rem;
+    }
+    .form-heading-main {
+      font-family: 'Cinzel', serif;
+      font-size: 1.55rem;
+      font-weight: 700;
+      letter-spacing: .06em;
+      line-height: 1.1;
+      color: var(--text);
+    }
+    .form-heading-sub {
+      font-family: 'Crimson Pro', serif;
+      font-style: italic;
+      font-size: 1rem;
+      color: var(--text-muted);
+      margin-top: .35rem;
+      margin-bottom: 1.8rem;
+      line-height: 1.5;
+    }
+
+    /* Social buttons */
+    .social-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .8rem;
+      margin-bottom: 1.4rem;
+    }
+    .social-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: .65rem;
+      padding: .85rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      background: var(--surface);
+      color: var(--text-dim);
+      font-family: 'DM Mono', monospace;
+      font-size: .62rem;
+      letter-spacing: .1em;
+      cursor: pointer;
+      text-decoration: none;
+      transition: border-color .25s, color .25s, background .25s, transform .25s, box-shadow .25s;
+      position: relative;
+      overflow: hidden;
+    }
+    .social-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--accent);
+      opacity: 0;
+      transition: opacity .3s;
+    }
+    .social-btn:hover {
+      border-color: var(--border-h);
+      color: var(--text);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px var(--glow);
+    }
+    .social-btn:hover::before { opacity: .05; }
+    .social-btn svg {
+      width: 16px; height: 16px;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 1;
+    }
+    .social-btn span { position: relative; z-index: 1; }
+
+    .social-btn.github-btn:hover { border-color: var(--text-muted); }
+    .social-btn.google-btn:hover { border-color: #4285F4; box-shadow: 0 8px 24px rgba(66,133,244,.1); }
+
+    /* OR divider */
+    .or-divider {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin: 1.2rem 0;
+      font-size: .55rem;
+      letter-spacing: .28em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .or-divider::before, .or-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* Input fields */
+    .field-group { margin-bottom: 1rem; }
+    .field-label {
+      display: block;
+      font-size: .55rem;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: .5rem;
+    }
+    .field-wrap {
+      position: relative;
+    }
+    .field-icon {
+      position: absolute;
+      left: 1rem; top: 50%;
+      transform: translateY(-50%);
+      font-size: .9rem;
+      pointer-events: none;
+      opacity: .4;
+      transition: opacity .3s;
+    }
+    .field-input {
+      width: 100%;
+      padding: .85rem 1rem .85rem 2.7rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: .72rem;
+      letter-spacing: .06em;
+      outline: none;
+      transition: border-color .25s, box-shadow .25s, background .25s;
+    }
+    .field-input::placeholder { color: var(--text-muted); opacity: .5; }
+    .field-input:focus {
+      border-color: var(--accent);
+      background: var(--surface2);
+      box-shadow: 0 0 0 3px var(--glow);
+    }
+    .field-input:focus + .field-icon,
+    .field-wrap:focus-within .field-icon { opacity: .8; }
+
+    /* Password strength bar */
+    .strength-bar {
+      height: 2px;
+      background: var(--border);
+      border-radius: 99px;
+      margin-top: .5rem;
+      overflow: hidden;
+      display: none;
+    }
+    .strength-bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      width: 0%;
+      transition: width .4s var(--ease), background .4s;
+      background: var(--accent2);
+    }
+    .field-group:focus-within .strength-bar { display: block; }
+
+    /* Rank selector (sign up only) */
+    .rank-selector {
+      margin-bottom: 1rem;
+    }
+    .rank-selector-label {
+      font-size: .55rem;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: .5rem;
+      display: block;
+    }
+    .rank-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .4rem;
+    }
+    .rank-chip {
+      font-size: .55rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      padding: .35rem .8rem;
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      color: var(--text-muted);
+      cursor: default;
+      background: var(--surface);
+      transition: all .25s;
+      font-family: 'Cinzel', serif;
+    }
+    .rank-chip.locked { opacity: .35; cursor: not-allowed; }
+    .rank-chip.selected {
+      border-color: var(--accent2);
+      color: var(--accent2);
+      background: rgba(214,73,51,.08);
+      box-shadow: 0 0 12px var(--glow2);
+    }
+    .rank-chip.psilos {
+      border-color: var(--border-h);
+      color: var(--accent);
+      background: rgba(146,220,229,.06);
+      cursor: pointer;
+    }
+    .rank-note {
+      font-size: .55rem;
+      letter-spacing: .1em;
+      color: var(--text-muted);
+      margin-top: .5rem;
+      font-style: italic;
+    }
+
+    /* Submit button */
+    .submit-btn {
+      width: 100%;
+      padding: 1rem;
+      background: var(--accent);
+      border: none;
+      border-radius: 3px;
+      color: #000;
+      font-family: 'Cinzel', serif;
+      font-size: .8rem;
+      font-weight: 700;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      margin-top: .4rem;
+      transition: transform .25s, box-shadow .25s;
+    }
+    .submit-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--accent2);
+      transform: translateX(-101%);
+      transition: transform .45s var(--ease);
+    }
+    .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 32px var(--glow); }
+    .submit-btn:hover::before { transform: translateX(0); }
+    .submit-btn span { position: relative; z-index: 1; }
+    .submit-btn:active { transform: scale(.98); }
+
+    /* Terms */
+    .terms-note {
+      text-align: center;
+      font-size: .52rem;
+      letter-spacing: .12em;
+      color: var(--text-muted);
+      margin-top: 1.2rem;
+      line-height: 1.8;
+    }
+    .terms-note a { color: var(--accent); text-decoration: none; }
+    .terms-note a:hover { text-decoration: underline; }
+
+    /* Oath text */
+    .oath-block {
+      margin-bottom: 1.6rem;
+      padding: 1rem 1.2rem;
+      border-left: 2px solid var(--accent2);
+      background: var(--ink);
+    }
+    .oath-text {
+      font-family: 'Crimson Pro', serif;
+      font-style: italic;
+      font-size: .88rem;
+      line-height: 1.7;
+      color: var(--text-dim);
+    }
+    .oath-speaker {
+      font-size: .55rem;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-top: .4rem;
+    }
+
+    /* Form toggle animation */
+    .form-panel {
+      transition: opacity .4s var(--ease), transform .4s var(--ease);
+    }
+    .form-panel.hidden {
+      display: none;
+    }
+
+    /* Animated entrance */
+    .form-box {
+      animation: boxEntrance .8s var(--ease) both;
+    }
+    @keyframes boxEntrance {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Checkmark row */
+    .check-row {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      margin-bottom: .9rem;
+      cursor: pointer;
+    }
+    .check-box {
+      width: 14px; height: 14px;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      flex-shrink: 0;
+      background: var(--surface);
+      position: relative;
+      transition: border-color .25s, background .25s;
+    }
+    .check-row input { display: none; }
+    .check-row input:checked ~ .check-box {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    .check-row input:checked ~ .check-box::after {
+      content: '✓';
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .55rem;
+      color: #000;
+    }
+    .check-label {
+      font-size: .58rem;
+      letter-spacing: .1em;
+      color: var(--text-muted);
+      flex: 1;
+    }
+
+    /* ══════════════════ CURSOR ══════════════════ */
+    .cursor {
+      position: fixed;
+      width: 7px; height: 7px;
+      background: var(--accent);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9999;
+      mix-blend-mode: difference;
+      transform: translate(-50%, -50%);
+      transition: width .25s, height .25s;
+    }
+    .cursor-ring {
+      position: fixed;
+      width: 28px; height: 28px;
+      border: 1px solid var(--accent);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9998;
+      transform: translate(-50%, -50%);
+      opacity: .45;
+      transition: width .3s, height .3s, opacity .3s;
+    }
+    .cursor-ring.expanded { width: 50px; height: 50px; opacity: .2; }
+
+    /* ══════════════════ MOBILE ══════════════════ */
+    @media (max-width: 860px) {
+      .shell { grid-template-columns: 1fr; }
+      .panel-left { display: none; }
+      .panel-right { padding: 2rem 1.8rem; }
+    }
+
+    /* ══════════════════ SCROLL INSIDE RIGHT ══════════════════ */
+    .panel-right::-webkit-scrollbar { width: 3px; }
+    .panel-right::-webkit-scrollbar-track { background: transparent; }
+    .panel-right::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+    /* ══════════════════ INPUT FOCUS ANIMATION ══════════════════ */
+    .field-input:focus { animation: fieldPulse .4s ease; }
+    @keyframes fieldPulse {
+      0%   { box-shadow: 0 0 0 0 var(--glow); }
+      60%  { box-shadow: 0 0 0 6px transparent; }
+      100% { box-shadow: 0 0 0 3px var(--glow); }
+    }
+
+    /* ══════════════════ FORGOT PASSWORD LINK ══════════════════ */
+    .forgot-link {
+      font-size: .55rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      text-decoration: none;
+      float: right;
+      transition: color .25s;
+    }
+    .forgot-link:hover { color: var(--accent); }
+
+    /* Glow accent line across top of right panel */
+    .panel-right::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--accent), transparent);
+      opacity: .4;
+    }
+
+    /* Battle seal - decorative bottom-left in left panel */
+    .battle-seal {
+      position: absolute;
+      bottom: 5rem;
+      right: 2rem;
+      font-size: .5rem;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--border-h);
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      pointer-events: none;
+      opacity: .5;
+    }
+
+    /* Animated glowing orb behind crest */
+    .orb {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 300px; height: 300px;
+      border-radius: 50%;
+      background: radial-gradient(ellipse at center, var(--glow) 0%, transparent 70%);
+      animation: orbPulse 5s ease-in-out infinite;
+      pointer-events: none;
+    }
+    @keyframes orbPulse {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: .7; }
+      50%       { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
+    }
+
+    /* Tab underline indicator */
+    .tab-indicator {
+      position: absolute;
+      bottom: 0;
+      height: 2px;
+      background: var(--accent2);
+      transition: left .35s var(--ease), width .35s var(--ease);
+    }
+
+    /* Hover shimmer on submit */
+    @keyframes shimmer {
+      0%   { background-position: -200% center; }
+      100% { background-position: 200% center; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+<div class="grain"></div>
+<canvas id="bg-canvas"></canvas>
+
+<div class="shell">
+
+  <!-- ══════ LEFT PANEL ══════ -->
+  <div class="panel-left">
+    <div class="corner-mark tl"></div>
+    <div class="corner-mark tr"></div>
+    <div class="corner-mark bl"></div>
+    <div class="corner-mark br"></div>
+
+    <!-- Logo -->
+    <div class="logo-wrap">
+      <a href="trove-landing.html" class="logo">TRO<span>VE</span></a>
+      <div class="logo-tag">Trojans Collective · Builder Ecosystem</div>
+    </div>
+
+    <!-- Glowing orb -->
+    <div class="orb"></div>
+
+    <!-- Crest SVG -->
+    <div class="crest-wrap">
+      <svg class="crest-svg" viewBox="0 0 300 340" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Shield base -->
+        <path d="M150 10 L280 60 L280 190 Q280 280 150 330 Q20 280 20 190 L20 60 Z"
+              fill="none" stroke="currentColor" stroke-width="1.5" opacity=".8"
+              style="color:var(--accent)"/>
+        <!-- Inner shield -->
+        <path d="M150 30 L260 72 L260 188 Q260 265 150 308 Q40 265 40 188 L40 72 Z"
+              fill="none" stroke="currentColor" stroke-width=".8" opacity=".4"
+              style="color:var(--accent)"/>
+        <!-- Laurel left -->
+        <ellipse cx="85" cy="130" rx="10" ry="18" fill="none" stroke="currentColor" stroke-width=".7" opacity=".5" transform="rotate(-35 85 130)" style="color:var(--accent)"/>
+        <ellipse cx="72" cy="155" rx="10" ry="18" fill="none" stroke="currentColor" stroke-width=".7" opacity=".5" transform="rotate(-25 72 155)" style="color:var(--accent)"/>
+        <ellipse cx="65" cy="183" rx="10" ry="18" fill="none" stroke="currentColor" stroke-width=".7" opacity=".5" transform="rotate(-10 65 183)" style="color:var(--accent)"/>
+        <!-- Laurel right -->
+        <ellipse cx="215" cy="130" rx="10" ry="18" fill="none" stroke="currentColor" stroke-width=".7" opacity=".5" transform="rotate(35 215 130)" style="color:var(--accent)"/>
+        <ellipse cx="228" cy="155" rx="10" ry="18" fill="none" stroke="currentColor" stroke-width=".7" opacity=".5" transform="rotate(25 228 155)" style="color:var(--accent)"/>
+        <ellipse cx="235" cy="183" rx="10" ry="18" fill="none" stroke="currentColor" stroke-width=".7" opacity=".5" transform="rotate(10 235 183)" style="color:var(--accent)"/>
+        <!-- Spear -->
+        <line x1="150" y1="60" x2="150" y2="270" stroke="currentColor" stroke-width="1" opacity=".6" style="color:var(--accent)"/>
+        <polygon points="150,38 142,68 158,68" fill="currentColor" opacity=".7" style="color:var(--accent)"/>
+        <!-- Crossguard -->
+        <line x1="115" y1="145" x2="185" y2="145" stroke="currentColor" stroke-width="1.2" opacity=".6" style="color:var(--accent)"/>
+        <!-- Crown top -->
+        <polygon points="110,58 122,40 134,55 150,30 166,55 178,40 190,58"
+                 fill="none" stroke="currentColor" stroke-width="1" opacity=".6"
+                 style="color:var(--accent2)"/>
+        <!-- TROVE text inside -->
+        <text x="150" y="230" text-anchor="middle" font-family="Bebas Neue, sans-serif"
+              font-size="28" letter-spacing="8" fill="currentColor" opacity=".9"
+              style="color:var(--accent)">TROVE</text>
+        <!-- Stars -->
+        <circle cx="100" cy="100" r="2" fill="currentColor" opacity=".4" style="color:var(--accent)"/>
+        <circle cx="200" cy="100" r="2" fill="currentColor" opacity=".4" style="color:var(--accent)"/>
+        <circle cx="150" cy="88"  r="2.5" fill="currentColor" opacity=".6" style="color:var(--accent2)"/>
+      </svg>
+      <div class="crest-title">Proof of Work · Builder Ecosystem</div>
+    </div>
+
+    <!-- Rank hierarchy ladder -->
+    <div class="rank-scroll">
+      <div class="rank-scroll-label">Your Path Awaits</div>
+      <div class="rank-line current">
+        <div class="rank-pip"></div>
+        <span class="rank-name-sm">Psilos</span>
+        <span class="rank-arrow">← You begin here</span>
+      </div>
+      <div class="h-divider"><span>↓</span></div>
+      <div class="rank-line">
+        <div class="rank-pip"></div>
+        <span class="rank-name-sm">Hoplite</span>
+      </div>
+      <div class="rank-line">
+        <div class="rank-pip"></div>
+        <span class="rank-name-sm">Hippeis</span>
+      </div>
+      <div class="rank-line">
+        <div class="rank-pip"></div>
+        <span class="rank-name-sm">Ouragos</span>
+      </div>
+      <div class="rank-line">
+        <div class="rank-pip"></div>
+        <span class="rank-name-sm">Lochagos</span>
+      </div>
+      <div class="rank-line">
+        <div class="rank-pip"></div>
+        <span class="rank-name-sm">Taxiarch</span>
+      </div>
+      <div class="rank-line">
+        <div class="rank-pip"></div>
+        <span class="rank-name-sm">Hipparch</span>
+      </div>
+      <div class="rank-line">
+        <div class="rank-pip"></div>
+        <span class="rank-name-sm">Strategos</span>
+      </div>
+    </div>
+
+    <div class="battle-seal">TROJANS COLLECTIVE · EST. MMXXV</div>
+  </div>
+
+  <!-- ══════ RIGHT PANEL ══════ -->
+  <div class="panel-right">
+    <!-- Theme toggle -->
+    <div class="theme-btn-label">Shrine Mode</div>
+    <button class="theme-btn" id="themeToggle" aria-label="Toggle theme" style="position:absolute;top:2rem;right:2rem;"></button>
+
+    <div class="form-box">
+
+      <!-- Tab Switcher -->
+      <div class="tab-switcher" role="tablist">
+        <button class="tab-btn active" id="tab-signin" role="tab" aria-selected="true" onclick="switchTab('signin')">
+          ⚔ Enter the Gates
+        </button>
+        <button class="tab-btn" id="tab-signup" role="tab" aria-selected="false" onclick="switchTab('signup')">
+          🛡 Join the Legion
+        </button>
+      </div>
+
+      <!-- ── SIGN IN PANEL ── -->
+      <div class="form-panel" id="panel-signin">
+        <div class="form-heading">
+          <div class="form-heading-main">Return, Warrior.</div>
+          <div class="form-heading-sub">
+            The battleground remembers your deeds.<br>
+            Present your seal to reclaim your post.
+          </div>
+        </div>
+
+        <!-- Oath -->
+        <div class="oath-block">
+          <div class="oath-text">"A soldier's greatest weapon is not his sword — it is his record."</div>
+          <div class="oath-speaker">— Strategos Maxim, Scroll VII</div>
+        </div>
+
+        <!-- Social login -->
+        <div class="social-row">
+          <a href="#" class="social-btn google-btn" id="googleSignIn">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+            </svg>
+            <span>Google</span>
+          </a>
+          <a href="#" class="social-btn github-btn" id="githubSignIn">
+            <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+            </svg>
+            <span>GitHub</span>
+          </a>
+        </div>
+
+        <div class="or-divider">or advance with credentials</div>
+
+        <!-- Fields -->
+        <div class="field-group">
+          <label class="field-label" for="si-email">War Dispatch Address</label>
+          <div class="field-wrap">
+            <input class="field-input" id="si-email" type="email" placeholder="commander@legion.io" autocomplete="email" />
+            <span class="field-icon">✉</span>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="si-pass" style="display:flex;justify-content:space-between;align-items:center;">
+            Secret Cipher
+            <a href="#" class="forgot-link">Forgot cipher?</a>
+          </label>
+          <div class="field-wrap">
+            <input class="field-input" id="si-pass" type="password" placeholder="••••••••••••" autocomplete="current-password" oninput="updateStrength(this,'si-strength')" />
+            <span class="field-icon">🔑</span>
+          </div>
+          <div class="strength-bar"><div class="strength-bar-fill" id="si-strength"></div></div>
+        </div>
+
+        <label class="check-row">
+          <input type="checkbox" />
+          <div class="check-box"></div>
+          <span class="check-label">Hold my post — remain signed in across sessions</span>
+        </label>
+
+        <button class="submit-btn" onclick="handleSignIn()">
+          <span>⚔ &nbsp;Reclaim My Post</span>
+        </button>
+
+        <div class="terms-note">
+          New to the battleground? <a href="#" onclick="switchTab('signup');return false;">Enlist as a Psilos →</a>
+        </div>
+      </div>
+
+      <!-- ── SIGN UP PANEL ── -->
+      <div class="form-panel hidden" id="panel-signup">
+        <div class="form-heading">
+          <div class="form-heading-main">Enlist, Psilos.</div>
+          <div class="form-heading-sub">
+            Every Strategos began as a Psilos.<br>
+            Forge your builder identity. Prove your worth in the arena.
+          </div>
+        </div>
+
+        <!-- Social signup -->
+        <div class="social-row">
+          <a href="#" class="social-btn google-btn" id="googleSignUp">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+            </svg>
+            <span>Google</span>
+          </a>
+          <a href="#" class="social-btn github-btn" id="githubSignUp">
+            <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+            </svg>
+            <span>GitHub</span>
+          </a>
+        </div>
+
+        <div class="or-divider">or forge your identity manually</div>
+
+        <!-- Name + Username -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem;">
+          <div class="field-group">
+            <label class="field-label" for="su-name">Given Name</label>
+            <div class="field-wrap">
+              <input class="field-input" id="su-name" type="text" placeholder="Leonidas" autocomplete="given-name"/>
+              <span class="field-icon">👤</span>
+            </div>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="su-handle">Battle Handle</label>
+            <div class="field-wrap">
+              <input class="field-input" id="su-handle" type="text" placeholder="@phalanx" autocomplete="username"/>
+              <span class="field-icon">⚡</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="su-email">War Dispatch Address</label>
+          <div class="field-wrap">
+            <input class="field-input" id="su-email" type="email" placeholder="commander@legion.io" autocomplete="email"/>
+            <span class="field-icon">✉</span>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="su-pass">Secret Cipher</label>
+          <div class="field-wrap">
+            <input class="field-input" id="su-pass" type="password" placeholder="Forge a strong cipher…" autocomplete="new-password" oninput="updateStrength(this,'su-strength')"/>
+            <span class="field-icon">🔑</span>
+          </div>
+          <div class="strength-bar" style="display:block;margin-top:.5rem;"><div class="strength-bar-fill" id="su-strength"></div></div>
+        </div>
+
+        <!-- Starting rank display -->
+        <div class="rank-selector">
+          <span class="rank-selector-label">Your Enlisted Rank</span>
+          <div class="rank-chips">
+            <span class="rank-chip psilos selected">⚔ Psilos</span>
+            <span class="rank-chip locked">🛡 Hoplite</span>
+            <span class="rank-chip locked">🐎 Hippeis</span>
+            <span class="rank-chip locked">🏹 Ouragos</span>
+            <span class="rank-chip locked">⚔ Lochagos</span>
+            <span class="rank-chip locked">🗡 Taxiarch</span>
+            <span class="rank-chip locked">🏛 Hipparch</span>
+            <span class="rank-chip locked">👑 Strategos</span>
+          </div>
+          <div class="rank-note">All soldiers enlist as Psilos. Ranks are earned through deeds in the arena.</div>
+        </div>
+
+        <label class="check-row">
+          <input type="checkbox" id="su-terms"/>
+          <div class="check-box"></div>
+          <span class="check-label">I swear by the Builder's Oath — to build publicly, review honestly, and serve the legion.</span>
+        </label>
+
+        <button class="submit-btn" onclick="handleSignUp()">
+          <span>🛡 &nbsp;Enlist in the Legion</span>
+        </button>
+
+        <div class="terms-note">
+          By enlisting you accept the <a href="#">Builder's Codex</a> and <a href="#">Legion Charter</a>.<br>
+          Already a warrior? <a href="#" onclick="switchTab('signin');return false;">← Return to the Gates</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══════ TOAST NOTIFICATION ══════ -->
+<div id="toast" style="
+  position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(80px);
+  background:var(--surface2);border:1px solid var(--border);border-radius:3px;
+  padding:.8rem 1.6rem;font-size:.65rem;letter-spacing:.14em;color:var(--text);
+  z-index:9999;transition:transform .4s var(--ease),opacity .4s;opacity:0;
+  font-family:'DM Mono',monospace;white-space:nowrap;
+  box-shadow:0 12px 32px rgba(0,0,0,.3);
+" id="toast"></div>
+
+<script>
+/* ══════ CANVAS 3D ══════ */
+const canvas = document.getElementById('bg-canvas');
+const ctx = canvas.getContext('2d');
+let W, H, particles = [];
+let mx = 0, my = 0;
+const html = document.documentElement;
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', () => { resize(); initP(); });
+resize();
+document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+
+function getC() {
+  const d = html.getAttribute('data-theme') === 'dark';
+  return {
+    p: d ? 'rgba(146,220,229,' : 'rgba(0,110,120,',
+    l: d ? 'rgba(146,220,229,' : 'rgba(0,100,110,',
+    g: d ? 'rgba(146,220,229,' : 'rgba(0,100,110,',
+    r: d ? 'rgba(214,73,51,'  : 'rgba(180,50,30,',
+  };
+}
+
+class P {
+  constructor() { this.reset(true); }
+  reset(init) {
+    this.x  = Math.random() * W;
+    this.y  = init ? Math.random() * H : H + 10;
+    this.z  = Math.random() * 500 + 100;
+    this.vx = (Math.random()-.5) * .25;
+    this.vy = -(Math.random() * .35 + .05);
+    this.r  = Math.random() * 1.2 + .4;
+    this.a  = Math.random() * .5 + .1;
+    this.life = 0;
+    this.max  = Math.random() * 350 + 200;
+    this.isRed = Math.random() < .08;
+  }
+  tick() {
+    const dx = mx - W/2, dy = my - H/2;
+    this.x += this.vx + dx*.00006;
+    this.y += this.vy + dy*.00006;
+    this.life++;
+    const fov = 350, s = fov/(fov+this.z);
+    this.sx = (this.x - W/2)*s + W/2;
+    this.sy = (this.y - H/2)*s + H/2;
+    this.sr = this.r * s;
+    this.sa = this.a * Math.min(this.life/50,1) * (1 - this.life/this.max);
+    if (this.life > this.max || this.sx<-50 || this.sx>W+50 || this.sy<-50) this.reset();
+  }
+  draw(c) {
+    ctx.beginPath();
+    ctx.arc(this.sx, this.sy, Math.max(.1, this.sr), 0, Math.PI*2);
+    const col = this.isRed ? c.r : c.p;
+    ctx.fillStyle = col + this.sa + ')';
+    ctx.fill();
+  }
+}
+
+function initP() {
+  particles = [];
+  for (let i = 0; i < 80; i++) particles.push(new P());
+}
+initP();
+
+function drawGrid(c) {
+  const hor = H * .5;
+  const vp  = W / 2;
+  // vertical lines
+  for (let i = -12; i <= 12; i++) {
+    const wx = i * 90;
+    const factor = H / (H - hor);
+    ctx.beginPath();
+    ctx.moveTo(vp + wx, hor);
+    ctx.lineTo(vp + wx * factor * 2.5, H);
+    const a = Math.max(0, .08 - Math.abs(i) * .006);
+    ctx.strokeStyle = c.g + a + ')';
+    ctx.lineWidth = .5;
+    ctx.stroke();
+  }
+  // horizontal lines
+  for (let j = 0; j <= 8; j++) {
+    const t = j / 8;
+    const y = hor + (H - hor) * Math.pow(t, 1.6);
+    const sp = 180 + (y - hor)/(H-hor) * W * 1.4;
+    ctx.beginPath();
+    ctx.moveTo(vp - sp, y);
+    ctx.lineTo(vp + sp, y);
+    ctx.strokeStyle = c.g + (t * .09) + ')';
+    ctx.lineWidth = .5;
+    ctx.stroke();
+  }
+}
+
+function drawConnections(c) {
+  for (let i = 0; i < particles.length; i++) {
+    for (let j = i+1; j < particles.length; j++) {
+      const a = particles[i], b = particles[j];
+      const dx = a.sx - b.sx, dy = a.sy - b.sy;
+      const d = Math.sqrt(dx*dx+dy*dy);
+      if (d < 80) {
+        const col = (a.isRed || b.isRed) ? c.r : c.l;
+        ctx.beginPath();
+        ctx.moveTo(a.sx, a.sy);
+        ctx.lineTo(b.sx, b.sy);
+        ctx.strokeStyle = col + ((1-d/80)*.1) + ')';
+        ctx.lineWidth = .4;
+        ctx.stroke();
+      }
+    }
+  }
+}
+
+(function loop() {
+  ctx.clearRect(0, 0, W, H);
+  const c = getC();
+  drawGrid(c);
+  drawConnections(c);
+  particles.forEach(p => { p.tick(); p.draw(c); });
+  requestAnimationFrame(loop);
+})();
+
+/* ══════ CURSOR ══════ */
+const curEl = document.getElementById('cursor');
+const curRing = document.getElementById('cursorRing');
+let rx = -100, ry = -100, cmx = -100, cmy = -100;
+document.addEventListener('mousemove', e => {
+  cmx = e.clientX; cmy = e.clientY;
+  curEl.style.left = cmx+'px'; curEl.style.top = cmy+'px';
+});
+(function curLoop() {
+  rx += (cmx-rx)*.12; ry += (cmy-ry)*.12;
+  curRing.style.left = rx+'px'; curRing.style.top = ry+'px';
+  requestAnimationFrame(curLoop);
+})();
+document.querySelectorAll('a,button,.social-btn,.rank-line,.rank-chip,.check-row').forEach(el => {
+  el.addEventListener('mouseenter', () => curRing.classList.add('expanded'));
+  el.addEventListener('mouseleave', () => curRing.classList.remove('expanded'));
+});
+
+/* ══════ THEME TOGGLE ══════ */
+document.getElementById('themeToggle').addEventListener('click', () => {
+  const d = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', d ? 'light' : 'dark');
+});
+
+/* ══════ TAB SWITCH ══════ */
+function switchTab(tab) {
+  const siPanel = document.getElementById('panel-signin');
+  const suPanel = document.getElementById('panel-signup');
+  const siBtn   = document.getElementById('tab-signin');
+  const suBtn   = document.getElementById('tab-signup');
+
+  if (tab === 'signin') {
+    siPanel.classList.remove('hidden');
+    suPanel.classList.add('hidden');
+    siBtn.classList.add('active');
+    suBtn.classList.remove('active');
+  } else {
+    siPanel.classList.add('hidden');
+    suPanel.classList.remove('hidden');
+    suBtn.classList.add('active');
+    siBtn.classList.remove('active');
+  }
+}
+
+/* ══════ PASSWORD STRENGTH ══════ */
+function updateStrength(input, barId) {
+  const val = input.value;
+  const bar = document.getElementById(barId);
+  let score = 0;
+  if (val.length >= 8) score++;
+  if (/[A-Z]/.test(val)) score++;
+  if (/[0-9]/.test(val)) score++;
+  if (/[^a-zA-Z0-9]/.test(val)) score++;
+  if (val.length >= 14) score++;
+
+  const pct = (score / 5) * 100;
+  bar.style.width = pct + '%';
+  if (score <= 1)      bar.style.background = '#D64933';
+  else if (score <= 2) bar.style.background = '#e09b3c';
+  else if (score <= 3) bar.style.background = '#c4c94a';
+  else                 bar.style.background = '#92DCE5';
+}
+
+/* ══════ TOAST ══════ */
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.opacity = '1';
+  t.style.transform = 'translateX(-50%) translateY(0)';
+  setTimeout(() => {
+    t.style.opacity = '0';
+    t.style.transform = 'translateX(-50%) translateY(80px)';
+  }, 3000);
+}
+
+/* ══════ FORM HANDLERS (frontend only) ══════ */
+function handleSignIn() {
+  const email = document.getElementById('si-email').value.trim();
+  const pass  = document.getElementById('si-pass').value;
+  if (!email || !pass) { showToast('⚠ A warrior identifies themselves fully.'); return; }
+  showToast('⚔ Verifying your seal… (connect backend to proceed)');
+}
+
+function handleSignUp() {
+  const name   = document.getElementById('su-name').value.trim();
+  const handle = document.getElementById('su-handle').value.trim();
+  const email  = document.getElementById('su-email').value.trim();
+  const pass   = document.getElementById('su-pass').value;
+  const terms  = document.getElementById('su-terms').checked;
+  if (!name || !handle || !email || !pass) { showToast('⚠ Fill every field to complete your enlistment.'); return; }
+  if (!terms) { showToast('⚠ Swear the Builder\'s Oath to proceed.'); return; }
+  showToast('🛡 Enlistment received — connect backend to continue.');
+}
+
+/* ══════ 3D TILT on form box ══════ */
+const formBox = document.querySelector('.panel-right');
+formBox.addEventListener('mousemove', e => {
+  const rect = formBox.getBoundingClientRect();
+  const x = (e.clientX - rect.left) / rect.width  - .5;
+  const y = (e.clientY - rect.top)  / rect.height - .5;
+  const box = formBox.querySelector('.form-box');
+  if (box) box.style.transform = `perspective(1000px) rotateY(${x*4}deg) rotateX(${-y*3}deg)`;
+});
+formBox.addEventListener('mouseleave', () => {
+  const box = formBox.querySelector('.form-box');
+  if (box) box.style.transform = '';
+});
+</script>
+</body>
+</html>
