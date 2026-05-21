@@ -1108,6 +1108,15 @@
           </div>
         </div>
 
+        <!-- Error Messages -->
+        <% if(locals.messages && messages.error) { %>
+          <div style="background: rgba(214,73,51,.2); border: 1px solid #D64933; border-radius: 4px; padding: 12px; margin-bottom: 20px; color: #ff6b6b;">
+            <% messages.error.forEach(msg => { %>
+              <div>⚠ <%= msg %></div>
+            <% }); %>
+          </div>
+        <% } %>
+
         <!-- Oath -->
         <div class="oath-block">
           <div class="oath-text">"A soldier's greatest weapon is not his sword — it is his record."</div>

@@ -1,17 +1,3 @@
-<!-- <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home - TROVE</title>
-</head>
-<body>
-    <h2>Hello, <%= user.username %></h2>
-    <p>Email: <%= user.email %></p>
-</body>
-</html> -->
-
-
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
@@ -1549,7 +1535,9 @@ body::before{
   <div class="sidebar-footer">
     <button class="sidebar-footer-btn">⚙️ Settings</button>
     <button class="sidebar-footer-btn">❓ Help</button>
+    <form action="/logout">
     <button class="sidebar-footer-btn" onclick="showToast()">🚪 Logout</button>
+    </form>
   </div>
 </aside>
 
@@ -1925,12 +1913,12 @@ body::before{
       <div class="profile-top">
         <div>
           <div class="profile-avatar-wrap">
-            <div class="profile-avatar">AR</div>
+            <div class="profile-avatar">BB</div>
             <div class="profile-rank-icon">⚔️</div>
           </div>
           <div class="profile-info">
-            <div class="profile-name">Aryan Rajput <span class="profile-rank-chip">LOCHAGOS · Rank 05/08</span></div>
-            <div class="profile-handle">@aryan_rajput · VJTI Mumbai · CS '26</div>
+            <div class="profile-name"> <%= user.username %> <span class="profile-rank-chip">LOCHAGOS · Rank 05/08</span></div>
+            <div class="profile-handle"><%= user.username %> · BVP COE PUNE · CE '28</div>
           </div>
         </div>
         <button class="profile-edit-btn" onclick="showToast()">✏️ Edit Profile</button>

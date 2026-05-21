@@ -87,11 +87,28 @@ app.get("/", (req,res) =>{
 });
 
 app.get("/signin", (req,res) =>{
-    res.render("signin.ejs");
+    res.render("signin.ejs", { messages: req.flash() });
 });
 
-app.post("/signin", passport.authenticate("local", {failureRedirect: "/signin", failureFlash: true}), (req,res) =>{
-    res.redirect("/home");
+app.post("/signin", (req, res, next) => {
+    passport.authenticate("local", (err, user, info) => {
+        if (err) {
+            console.log("Passport error:", err);
+            return next(err);
+        }
+        if (!user) {
+            console.log("Authentication failed:", info?.message);
+            req.flash("error", info?.message || "Invalid username or password");
+            return res.redirect("/signin");
+        }
+        req.logIn(user, (err) => {
+            if (err) {
+                console.log("Login error:", err);
+                return next(err);
+            }
+            res.redirect("/home");
+        });
+    })(req, res, next);
 });
 
 app.post("/signup", async (req,res) =>{
@@ -99,16 +116,16 @@ app.post("/signup", async (req,res) =>{
         let { username,email,password} = req.body;
         const newUser = new User({email,username});
         const registeredUser = await User.register(newUser,password);
-        console.log(registeredUser);
+        console.log("User registered:", registeredUser);
         req.login(registeredUser,(err) =>{
             if(err){
+                console.log("Login error after signup:", err);
                 return res.redirect("/signin");
             }
-            // req.flash("success","User registered Successfully");
             res.redirect("/home");
         });  
     }catch(e){
-        // req.flash("error",e.message);
+        console.log("Signup error:", e.message);
         res.redirect("/signin");
     }
 });
@@ -117,6 +134,15 @@ app.post("/signup", async (req,res) =>{
 app.get("/home", isLoggedIn, (req,res) =>{
     res.render("home.ejs",{user: req.user});
 });
+
+app.get("/logout", (req,res) =>{
+    req.logout((err) =>{
+        if(err){
+            return next(err);
+        }
+        res.redirect("/");
+    });
+})
 
 //Server Check
 app.listen(8080, () => {
