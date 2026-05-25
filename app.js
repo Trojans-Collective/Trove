@@ -86,6 +86,11 @@ app.get("/", (req,res) =>{
     res.render("landing.ejs");
 });
 
+app.get("/createProfile", (req,res) =>{
+    res.render("createProf.ejs");
+});
+
+
 app.get("/signin", (req,res) =>{
     res.render("signin.ejs", { messages: req.flash() });
 });

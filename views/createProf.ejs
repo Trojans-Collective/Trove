@@ -1,0 +1,1526 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>TROVE — Forge Your Identity</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+/* ══════════════════ TOKENS ══════════════════ */
+:root {
+  --c-black:#000000;--c-cyan:#92DCE5;--c-cream:#EEE5E9;
+  --c-grey:#7C7C7C;--c-red:#D64933;
+  --ease-out-expo:cubic-bezier(.16,1,.3,1);
+  --ease-bounce:cubic-bezier(.34,1.56,.64,1);
+}
+[data-theme="dark"]{
+  --bg:#000;--bg2:#080808;--surface:#111;--surface2:#1a1a1a;
+  --border:rgba(146,220,229,.1);--border2:rgba(146,220,229,.2);
+  --text:#EEE5E9;--text-muted:#7C7C7C;--text-dim:#444;
+  --accent:#92DCE5;--accent2:#D64933;
+  --glow:rgba(146,220,229,.15);--glow2:rgba(214,73,51,.15);
+  --input-bg:#0d0d0d;--input-border:rgba(146,220,229,.15);
+}
+[data-theme="light"]{
+  --bg:#EEE5E9;--bg2:#e4dade;--surface:#f5f0f2;--surface2:#fff;
+  --border:rgba(0,0,0,.1);--border2:rgba(0,0,0,.2);
+  --text:#000;--text-muted:#7C7C7C;--text-dim:#bbb;
+  --accent:#1a7a85;--accent2:#D64933;
+  --glow:rgba(0,120,130,.1);--glow2:rgba(214,73,51,.12);
+  --input-bg:#fff;--input-border:rgba(0,100,110,.2);
+}
+
+/* ══════════════════ BASE ══════════════════ */
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;}
+body{
+  font-family:'Syne',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  transition:background .6s,color .6s;
+  overflow:hidden;
+  user-select:none;
+}
+
+/* ══════════════════ CANVAS ══════════════════ */
+#bg-canvas{position:fixed;inset:0;z-index:0;pointer-events:none;}
+
+/* ══════════════════ CUSTOM CURSOR ══════════════════ */
+.cursor{
+  position:fixed;width:8px;height:8px;
+  background:var(--accent);border-radius:50%;
+  pointer-events:none;z-index:9999;
+  transform:translate(-50%,-50%);
+  transition:background .3s;
+  mix-blend-mode:difference;
+}
+.cursor-ring{
+  position:fixed;width:36px;height:36px;
+  border:1.5px solid var(--accent);border-radius:50%;
+  pointer-events:none;z-index:9998;
+  transform:translate(-50%,-50%);
+  opacity:.5;
+  transition:width .35s var(--ease-bounce),height .35s var(--ease-bounce),opacity .3s,border-color .3s;
+}
+.cursor-ring.expanded{width:60px;height:60px;opacity:.2;}
+.cursor-ring.clicked{width:20px;height:20px;opacity:.8;}
+
+/* ══════════════════ NAVBAR ══════════════════ */
+.nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:1.2rem 2.5rem;
+}
+.nav::before{
+  content:'';position:absolute;inset:0;
+  background:var(--bg);opacity:.7;z-index:-1;
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+}
+.logo{
+  font-family:'Bebas Neue',sans-serif;font-size:1.7rem;
+  letter-spacing:.18em;color:var(--accent);text-decoration:none;
+}
+.logo span{color:var(--accent2);}
+
+.nav-right{display:flex;align-items:center;gap:1.2rem;}
+
+.nav-back{
+  font-family:'DM Mono',monospace;font-size:.65rem;
+  letter-spacing:.18em;text-transform:uppercase;
+  color:var(--text-muted);text-decoration:none;
+  border:1px solid var(--border);border-radius:3px;
+  padding:.4rem .9rem;
+  transition:color .3s,border-color .3s,transform .25s;
+  cursor:pointer;background:transparent;
+}
+.nav-back:hover{color:var(--accent);border-color:var(--accent);transform:translateY(-1px);}
+
+/* Theme toggle */
+.theme-toggle{
+  width:48px;height:26px;border-radius:99px;
+  background:var(--surface2);border:1.5px solid var(--border);
+  cursor:pointer;position:relative;overflow:hidden;
+  transition:background .4s,border .4s;flex-shrink:0;
+}
+.theme-toggle::before{
+  content:'';position:absolute;top:3px;left:3px;
+  width:18px;height:18px;border-radius:50%;
+  background:var(--accent);
+  transition:transform .45s var(--ease-bounce),background .4s;
+  box-shadow:0 0 8px var(--glow);
+}
+[data-theme="light"] .theme-toggle::before{transform:translateX(22px);background:var(--accent2);}
+.theme-icon{position:absolute;top:50%;transform:translateY(-50%);font-size:.65rem;pointer-events:none;transition:opacity .3s;}
+.icon-moon{left:6px;}.icon-sun{right:5px;opacity:0;}
+[data-theme="light"] .icon-moon{opacity:0;}[data-theme="light"] .icon-sun{opacity:1;}
+
+/* ══════════════════ SCREEN SYSTEM ══════════════════ */
+.screen{
+  position:fixed;inset:0;z-index:10;
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;
+  transition:opacity .5s var(--ease-out-expo),transform .5s var(--ease-out-expo);
+  transform:translateY(30px);
+  overflow:hidden;
+}
+.screen.active{opacity:1;pointer-events:all;transform:translateY(0);}
+.screen.exit-up{opacity:0;transform:translateY(-40px);}
+.screen.exit-down{opacity:0;transform:translateY(40px);}
+
+/* ══════════════════ AUTH SCREENS ══════════════════ */
+.auth-wrap{
+  position:relative;z-index:1;
+  display:flex;flex-direction:column;align-items:center;
+  text-align:center;padding:2rem;
+  width:100%;max-width:480px;
+}
+
+.auth-eyebrow{
+  font-family:'DM Mono',monospace;font-size:.65rem;
+  letter-spacing:.3em;text-transform:uppercase;
+  color:var(--accent);
+  border:1px solid var(--border2);border-radius:99px;
+  padding:.3rem 1rem;margin-bottom:2rem;
+  animation:pulseGlow 3s ease-in-out infinite;
+}
+@keyframes pulseGlow{
+  0%,100%{box-shadow:0 0 0 rgba(146,220,229,0);}
+  50%{box-shadow:0 0 20px var(--glow);}
+}
+
+.auth-title{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(3.5rem,8vw,6rem);
+  line-height:.9;letter-spacing:.04em;
+  margin-bottom:1rem;
+}
+.auth-title .line2{color:var(--accent);}
+
+.auth-sub{
+  font-family:'Instrument Serif',serif;font-style:italic;
+  font-size:1.05rem;color:var(--text-muted);
+  margin-bottom:3rem;line-height:1.6;
+}
+
+.auth-btns{display:flex;flex-direction:column;gap:.9rem;width:100%;}
+
+.btn-forge{
+  padding:1rem 2rem;
+  background:var(--accent);color:#000;
+  font-family:'DM Mono',monospace;font-size:.78rem;
+  letter-spacing:.14em;text-transform:uppercase;
+  border:none;border-radius:3px;cursor:pointer;
+  position:relative;overflow:hidden;
+  transition:transform .25s var(--ease-bounce),box-shadow .25s;
+  font-weight:500;
+}
+.btn-forge::before{
+  content:'';position:absolute;inset:0;
+  background:var(--accent2);transform:translateX(-101%);
+  transition:transform .4s var(--ease-out-expo);
+}
+.btn-forge span{position:relative;z-index:1;}
+.btn-forge:hover{transform:translateY(-3px);box-shadow:0 16px 40px var(--glow);}
+.btn-forge:hover::before{transform:translateX(0);}
+.btn-forge:active{transform:scale(.97);}
+
+.btn-ghost{
+  padding:1rem 2rem;background:transparent;
+  color:var(--text);font-family:'DM Mono',monospace;
+  font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;
+  border:1.5px solid var(--border2);border-radius:3px;cursor:pointer;
+  transition:border-color .3s,color .3s,transform .25s var(--ease-bounce);
+}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-2px);}
+.btn-ghost:active{transform:scale(.97);}
+
+.auth-divider{
+  display:flex;align-items:center;gap:1rem;
+  font-family:'DM Mono',monospace;font-size:.6rem;
+  letter-spacing:.2em;color:var(--text-dim);
+  margin:.3rem 0;
+}
+.auth-divider::before,.auth-divider::after{
+  content:'';flex:1;height:1px;background:var(--border);
+}
+
+/* ══════════════════ LOGIN FORM ══════════════════ */
+.login-wrap{
+  width:100%;max-width:440px;
+  position:relative;z-index:1;
+  padding:2rem;
+}
+.login-header{margin-bottom:2.5rem;text-align:center;}
+.login-header h2{
+  font-family:'Bebas Neue',sans-serif;font-size:3.5rem;
+  letter-spacing:.08em;margin-bottom:.3rem;
+}
+.login-header p{
+  font-family:'DM Mono',monospace;font-size:.65rem;
+  letter-spacing:.18em;text-transform:uppercase;color:var(--text-muted);
+}
+
+/* Input groups */
+.input-group{position:relative;margin-bottom:1.3rem;}
+.input-label{
+  font-family:'DM Mono',monospace;font-size:.62rem;
+  letter-spacing:.2em;text-transform:uppercase;
+  color:var(--text-muted);margin-bottom:.5rem;display:block;
+  transition:color .3s;
+}
+.input-field{
+  width:100%;padding:.9rem 1.1rem;
+  background:var(--input-bg);
+  border:1.5px solid var(--input-border);
+  border-radius:3px;
+  color:var(--text);
+  font-family:'DM Mono',monospace;font-size:.82rem;
+  outline:none;
+  transition:border-color .3s,box-shadow .3s,transform .2s;
+}
+.input-field::placeholder{color:var(--text-dim);}
+.input-field:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px var(--glow);
+  transform:translateY(-1px);
+}
+.input-field:focus + .input-glow{opacity:1;}
+.input-glow{
+  position:absolute;inset:0;border-radius:3px;
+  box-shadow:0 0 20px var(--glow);
+  opacity:0;pointer-events:none;
+  transition:opacity .3s;
+}
+.input-group:focus-within .input-label{color:var(--accent);}
+
+/* Shake on error */
+@keyframes shake{
+  0%,100%{transform:translateX(0);}
+  20%{transform:translateX(-6px);}
+  40%{transform:translateX(6px);}
+  60%{transform:translateX(-4px);}
+  80%{transform:translateX(4px);}
+}
+.input-field.error{border-color:var(--accent2);animation:shake .4s ease;}
+.error-msg{
+  font-family:'DM Mono',monospace;font-size:.6rem;
+  letter-spacing:.12em;color:var(--accent2);
+  margin-top:.4rem;display:none;
+}
+.error-msg.show{display:block;}
+
+.input-toggle-pw{
+  position:absolute;right:.9rem;top:50%;
+  transform:translateY(calc(-50% + 12px));
+  cursor:pointer;color:var(--text-muted);font-size:.85rem;
+  transition:color .3s;border:none;background:none;
+}
+.input-toggle-pw:hover{color:var(--accent);}
+
+/* strength bar */
+.strength-bar{
+  display:flex;gap:3px;margin-top:.5rem;
+}
+.strength-seg{
+  height:3px;flex:1;border-radius:99px;
+  background:var(--border);transition:background .4s;
+}
+.strength-seg.weak{background:var(--accent2);}
+.strength-seg.medium{background:#f0c040;}
+.strength-seg.strong{background:var(--accent);}
+
+/* ══════════════════ ONBOARDING SYSTEM ══════════════════ */
+.onboard-wrap{
+  position:relative;z-index:1;
+  width:100%;max-width:600px;
+  padding:2rem;
+  display:flex;flex-direction:column;align-items:center;
+  text-align:center;
+}
+
+/* Progress rune bar */
+.rune-progress{
+  display:flex;align-items:center;gap:.5rem;
+  margin-bottom:3rem;
+}
+.rune-pip{
+  width:28px;height:28px;border-radius:50%;
+  border:1.5px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'DM Mono',monospace;font-size:.55rem;
+  color:var(--text-dim);
+  position:relative;cursor:pointer;
+  transition:all .4s var(--ease-bounce);
+  background:var(--surface);
+}
+.rune-pip.completed{
+  background:var(--accent);border-color:var(--accent);
+  color:#000;transform:scale(1.05);
+}
+.rune-pip.active{
+  border-color:var(--accent);color:var(--accent);
+  box-shadow:0 0 0 4px var(--glow),0 0 20px var(--glow);
+  animation:ripplePip 2s ease-in-out infinite;
+}
+@keyframes ripplePip{
+  0%,100%{box-shadow:0 0 0 4px var(--glow),0 0 20px var(--glow);}
+  50%{box-shadow:0 0 0 8px rgba(146,220,229,.05),0 0 30px var(--glow);}
+}
+.rune-line{height:1px;flex:1;background:var(--border);position:relative;overflow:hidden;}
+.rune-line::after{
+  content:'';position:absolute;inset:0;
+  background:var(--accent);transform:scaleX(0);transform-origin:left;
+  transition:transform .6s var(--ease-out-expo);
+}
+.rune-line.filled::after{transform:scaleX(1);}
+
+/* Step question */
+.step-num{
+  font-family:'DM Mono',monospace;font-size:.62rem;
+  letter-spacing:.3em;text-transform:uppercase;
+  color:var(--accent2);margin-bottom:.8rem;
+  display:flex;align-items:center;gap:.6rem;
+}
+.step-num::before,.step-num::after{content:'—';}
+
+.step-glyph{
+  font-size:3rem;margin-bottom:1rem;
+  display:block;
+  animation:floatGlyph 4s ease-in-out infinite;
+}
+@keyframes floatGlyph{
+  0%,100%{transform:translateY(0) rotate(-3deg);}
+  50%{transform:translateY(-10px) rotate(3deg);}
+}
+
+.step-question{
+  font-family:'Instrument Serif',serif;
+  font-size:clamp(1.6rem,4vw,2.4rem);
+  line-height:1.2;margin-bottom:.6rem;
+  color:var(--text);
+}
+.step-question em{color:var(--accent);font-style:italic;}
+
+.step-hint{
+  font-family:'DM Mono',monospace;font-size:.68rem;
+  letter-spacing:.12em;color:var(--text-muted);
+  margin-bottom:2.2rem;line-height:1.6;
+}
+
+/* Choice chips */
+.chip-grid{
+  display:flex;flex-wrap:wrap;gap:.6rem;
+  justify-content:center;margin-bottom:2rem;
+}
+.chip{
+  padding:.5rem 1.1rem;
+  border:1.5px solid var(--border2);border-radius:3px;
+  font-family:'DM Mono',monospace;font-size:.68rem;
+  letter-spacing:.12em;text-transform:uppercase;
+  color:var(--text-muted);cursor:pointer;
+  background:var(--surface);
+  transition:all .25s var(--ease-bounce);
+  position:relative;overflow:hidden;
+}
+.chip::before{
+  content:'';position:absolute;inset:0;
+  background:var(--accent);opacity:0;
+  transition:opacity .25s;
+}
+.chip span{position:relative;z-index:1;}
+.chip:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-2px);}
+.chip.selected{
+  border-color:var(--accent);color:#000;
+  transform:translateY(-3px) scale(1.05);
+  box-shadow:0 8px 24px var(--glow);
+}
+.chip.selected::before{opacity:1;}
+.chip:active{transform:scale(.95);}
+
+/* Multi-select chips */
+.chip.multi.selected{color:#000;}
+.chip.multi.selected::before{background:var(--accent);}
+
+/* Rank selector cards */
+.rank-select-grid{
+  display:grid;grid-template-columns:repeat(2,1fr);
+  gap:.8rem;width:100%;margin-bottom:2rem;
+  max-height:320px;overflow-y:auto;
+  scrollbar-width:thin;scrollbar-color:var(--border) transparent;
+}
+.rank-sel-card{
+  background:var(--surface);border:1.5px solid var(--border);
+  border-radius:4px;padding:1rem;
+  display:flex;flex-direction:column;align-items:flex-start;
+  cursor:pointer;text-align:left;
+  transition:all .3s var(--ease-bounce);position:relative;overflow:hidden;
+}
+.rank-sel-card::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;
+  height:2px;background:var(--accent);
+  transform:scaleX(0);transform-origin:left;
+  transition:transform .3s;
+}
+.rank-sel-card:hover{border-color:var(--accent);transform:translateY(-3px);}
+.rank-sel-card:hover::after{transform:scaleX(1);}
+.rank-sel-card.selected{
+  border-color:var(--accent);background:var(--surface2);
+  box-shadow:0 8px 24px var(--glow);
+}
+.rank-sel-card.selected::after{transform:scaleX(1);}
+.rsc-icon{font-size:1.5rem;margin-bottom:.4rem;}
+.rsc-name{
+  font-family:'Bebas Neue',sans-serif;font-size:1.1rem;
+  letter-spacing:.1em;color:var(--text);
+}
+.rsc-desc{
+  font-family:'DM Mono',monospace;font-size:.6rem;
+  letter-spacing:.1em;color:var(--text-muted);margin-top:.2rem;
+  line-height:1.5;
+}
+
+/* Textarea */
+.step-textarea{
+  width:100%;padding:1rem 1.2rem;
+  background:var(--input-bg);
+  border:1.5px solid var(--input-border);
+  border-radius:3px;
+  color:var(--text);font-family:'Instrument Serif',serif;
+  font-size:1rem;line-height:1.7;
+  outline:none;resize:none;height:120px;
+  transition:border-color .3s,box-shadow .3s;
+  margin-bottom:2rem;
+}
+.step-textarea::placeholder{color:var(--text-dim);font-style:italic;}
+.step-textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--glow);}
+
+/* Step input */
+.step-input{
+  width:100%;padding:1rem 1.2rem;
+  background:var(--input-bg);
+  border:1.5px solid var(--input-border);
+  border-radius:3px;
+  color:var(--text);font-family:'DM Mono',monospace;
+  font-size:.9rem;letter-spacing:.08em;
+  outline:none;margin-bottom:2rem;
+  transition:border-color .3s,box-shadow .3s,transform .2s;
+  text-align:center;
+}
+.step-input::placeholder{color:var(--text-dim);}
+.step-input:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px var(--glow);
+  transform:scale(1.01);
+}
+
+/* Navigation arrows */
+.step-nav{
+  display:flex;align-items:center;gap:1.2rem;
+}
+.nav-arrow{
+  width:52px;height:52px;border-radius:50%;
+  border:1.5px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;background:var(--surface);
+  color:var(--text-muted);font-size:1.1rem;
+  transition:all .3s var(--ease-bounce);position:relative;overflow:hidden;
+}
+.nav-arrow::before{
+  content:'';position:absolute;inset:0;border-radius:50%;
+  background:var(--accent);opacity:0;
+  transition:opacity .3s;
+}
+.nav-arrow span{position:relative;z-index:1;}
+.nav-arrow:hover{
+  border-color:var(--accent);color:#000;
+  transform:translateY(-3px) scale(1.08);
+  box-shadow:0 12px 30px var(--glow);
+}
+.nav-arrow:hover::before{opacity:1;}
+.nav-arrow:active{transform:scale(.92);}
+.nav-arrow.back-arrow{opacity:.5;}
+.nav-arrow.back-arrow:hover{opacity:1;background:var(--surface2);}
+.nav-arrow.back-arrow:hover::before{opacity:0;}
+.nav-arrow.back-arrow:hover{color:var(--text);}
+
+.skip-link{
+  font-family:'DM Mono',monospace;font-size:.6rem;
+  letter-spacing:.2em;text-transform:uppercase;
+  color:var(--text-dim);cursor:pointer;
+  text-decoration:none;
+  transition:color .3s;
+}
+.skip-link:hover{color:var(--text-muted);}
+
+/* ══════════════════ SLIDE TRANSITIONS ══════════════════ */
+.step-content{
+  opacity:0;transform:translateX(40px);
+  transition:opacity .45s var(--ease-out-expo),transform .45s var(--ease-out-expo);
+  width:100%;
+}
+.step-content.active{opacity:1;transform:translateX(0);}
+.step-content.exit-left{opacity:0;transform:translateX(-40px);transition-duration:.25s;}
+.step-content.exit-right{opacity:0;transform:translateX(40px);transition-duration:.25s;}
+
+/* ══════════════════ CHAR COUNTER ══════════════════ */
+.char-count{
+  font-family:'DM Mono',monospace;font-size:.58rem;
+  letter-spacing:.15em;color:var(--text-dim);
+  text-align:right;margin-top:-.25rem;margin-bottom:1.5rem;
+}
+.char-count.warn{color:#f0c040;}
+.char-count.over{color:var(--accent2);}
+
+/* ══════════════════ FEATURE TOOLTIP ══════════════════ */
+.feature-hint{
+  display:flex;align-items:flex-start;gap:.8rem;
+  background:var(--surface);
+  border:1px solid var(--border);border-radius:4px;
+  padding:.9rem 1.1rem;margin-top:1rem;
+  text-align:left;
+  animation:slideHint .4s var(--ease-out-expo) forwards;
+  opacity:0;
+}
+@keyframes slideHint{to{opacity:1;transform:translateY(0);}
+from{opacity:0;transform:translateY(8px);}}
+.feature-hint-icon{font-size:1.2rem;flex-shrink:0;}
+.feature-hint-text{
+  font-family:'DM Mono',monospace;font-size:.62rem;
+  letter-spacing:.08em;color:var(--text-muted);line-height:1.6;
+}
+.feature-hint-text strong{color:var(--accent);font-weight:500;}
+
+/* ══════════════════ RANK BADGE REVEAL ══════════════════ */
+.rank-badge{
+  display:inline-flex;align-items:center;gap:.6rem;
+  background:var(--surface);border:1.5px solid var(--accent);
+  border-radius:4px;padding:.6rem 1.2rem;
+  font-family:'Bebas Neue',sans-serif;font-size:1.2rem;
+  letter-spacing:.14em;color:var(--accent);
+  box-shadow:0 0 24px var(--glow);
+  animation:badgePop .6s var(--ease-bounce);
+}
+@keyframes badgePop{
+  from{transform:scale(0) rotate(-10deg);}
+  to{transform:scale(1) rotate(0);}
+}
+
+/* ══════════════════ SUCCESS SCREEN ══════════════════ */
+.success-wrap{
+  position:relative;z-index:1;
+  text-align:center;padding:2rem;
+  max-width:500px;width:100%;
+}
+.success-glyph{
+  font-size:5rem;display:block;
+  animation:successBounce 1s var(--ease-bounce) .2s both;
+}
+@keyframes successBounce{
+  from{transform:scale(0) rotate(-20deg);opacity:0;}
+  to{transform:scale(1) rotate(0);opacity:1;}
+}
+.success-title{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(3rem,8vw,5.5rem);
+  line-height:.9;letter-spacing:.04em;
+  margin:1rem 0;
+  animation:fadeUp .7s var(--ease-out-expo) .5s both;
+}
+.success-sub{
+  font-family:'Instrument Serif',serif;
+  font-style:italic;font-size:1.1rem;
+  color:var(--text-muted);line-height:1.7;
+  margin-bottom:2.5rem;
+  animation:fadeUp .7s var(--ease-out-expo) .7s both;
+}
+.success-rank{
+  margin-bottom:2.5rem;
+  animation:fadeUp .7s var(--ease-out-expo) .9s both;
+}
+
+/* ══════════════════ AMBIENT PARTICLES ══════════════════ */
+.ambient-particle{
+  position:fixed;border-radius:50%;
+  pointer-events:none;z-index:1;
+  animation:ambientFloat linear infinite;
+  opacity:0;
+}
+@keyframes ambientFloat{
+  0%{transform:translateY(0) scale(1);opacity:0;}
+  10%{opacity:.4;}
+  90%{opacity:.2;}
+  100%{transform:translateY(-100vh) scale(.3);opacity:0;}
+}
+
+/* ══════════════════ KEY ANIMATIONS ══════════════════ */
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(20px);}
+  to{opacity:1;transform:translateY(0);}
+}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+
+/* ══════════════════ KEYBOARD HINT ══════════════════ */
+.keyboard-hint{
+  position:fixed;bottom:2rem;right:2rem;z-index:50;
+  font-family:'DM Mono',monospace;font-size:.58rem;
+  letter-spacing:.15em;color:var(--text-dim);
+  display:flex;align-items:center;gap:.5rem;
+  animation:fadeIn 1s 2s both;
+}
+.key-badge{
+  border:1px solid var(--border);border-radius:3px;
+  padding:.2rem .5rem;color:var(--text-muted);
+  font-size:.6rem;background:var(--surface);
+  transition:background .15s,transform .15s;
+}
+.key-badge.pressed{
+  background:var(--accent);color:#000;
+  transform:scale(.9);
+}
+
+/* ══════════════════ FIELD ANIM ══════════════════ */
+@keyframes inputSuccess{
+  0%{border-color:var(--accent);}
+  50%{box-shadow:0 0 0 6px var(--glow);}
+  100%{border-color:var(--accent);}
+}
+.input-success{animation:inputSuccess .5s ease;}
+
+/* ripple */
+.ripple{
+  position:absolute;border-radius:50%;
+  background:rgba(146,220,229,.2);
+  transform:scale(0);
+  animation:rippleAnim .6s linear;
+  pointer-events:none;
+}
+@keyframes rippleAnim{to{transform:scale(4);opacity:0;}}
+
+/* ══════════════════ SCROLL BAR ══════════════════ */
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+
+/* ══════════════════ MOBILE ══════════════════ */
+@media(max-width:640px){
+  .nav{padding:1rem 1.2rem;}
+  .rank-select-grid{grid-template-columns:1fr;}
+  .onboard-wrap{padding:1rem;}
+  .step-question{font-size:1.5rem;}
+}
+</style>
+</head>
+<body>
+
+<!-- Custom cursor -->
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- Background canvas -->
+<canvas id="bg-canvas"></canvas>
+
+<!-- Keyboard hint -->
+<div class="keyboard-hint">
+  Press <span class="key-badge" id="keyEnter">↵ Enter</span> to advance
+</div>
+
+<!-- ═══════════════════════════════ NAV ═══════════════════════════════ -->
+<nav class="nav">
+  <a href="trove-landing.html" class="logo">TRO<span>VE</span></a>
+  <div class="nav-right">
+    <a href="/" class="nav-back" id="navBack" onclick="goToScreen('landing')">← Back to Home</a>
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+      <span class="theme-icon icon-moon">🌙</span>
+      <span class="theme-icon icon-sun">☀️</span>
+    </button>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════ SCREEN 1: LANDING CHOICE ═══════════════════════════════ -->
+<div class="screen active" id="screen-landing">
+  <div class="auth-wrap">
+    <div class="auth-eyebrow">Forge Your Builder Identity</div>
+    <h1 class="auth-title">
+      ENTER<br><span class="line2">THE<br>FORGE</span>
+    </h1>
+    <p class="auth-sub">Where technical identity is <em>earned</em>,<br>not uploaded.</p>
+    <div class="auth-btns">
+      <button class="btn-forge" onclick="goToScreen('signup')"><span>⚔️ &nbsp;Create Your Profile</span></button>
+      <div class="auth-divider">already a builder</div>
+      <a href="/signin" class="btn-ghost" style="text-decoration:none;">Sign In to Trove</a>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ SCREEN 2: LOGIN ═══════════════════════════════ -->
+<div class="screen" id="screen-login">
+  <div class="login-wrap">
+    <div class="login-header">
+      <h2>RETURN<br><span style="color:var(--accent)">BUILDER</span></h2>
+      <p>Your rank awaits</p>
+    </div>
+
+    <div class="input-group">
+      <label class="input-label">Email Address</label>
+      <input class="input-field" type="email" id="loginEmail" placeholder="you@college.edu" autocomplete="email"/>
+      <div class="input-glow"></div>
+      <div class="error-msg" id="loginEmailErr">⚠ Enter a valid email address</div>
+    </div>
+
+    <div class="input-group" style="position:relative;">
+      <label class="input-label">Password</label>
+      <input class="input-field" type="password" id="loginPw" placeholder="Your secret cipher..." autocomplete="current-password"/>
+      <button class="input-toggle-pw" id="togglePw" tabindex="-1">👁</button>
+      <div class="input-glow"></div>
+      <div class="error-msg" id="loginPwErr">⚠ Password is required</div>
+    </div>
+
+    <button class="btn-forge" style="width:100%;margin-top:.5rem;" onclick="handleLogin()">
+      <span>Enter the Forge →</span>
+    </button>
+
+    <div style="margin-top:1.2rem;text-align:center;">
+      <button class="btn-ghost" style="width:100%" onclick="goToScreen('signup')">
+        New builder? Create Profile
+      </button>
+    </div>
+
+    <div style="margin-top:1.2rem;text-align:center;">
+      <a href="#" style="font-family:'DM Mono',monospace;font-size:.62rem;letter-spacing:.15em;color:var(--text-muted);text-decoration:none;transition:color .3s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-muted)'">
+        Forgot your cipher? Reset →
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ SCREEN 3: SIGNUP EMAIL ═══════════════════════════════ -->
+<div class="screen" id="screen-signup">
+  <div class="login-wrap">
+    <div class="login-header">
+      <div class="auth-eyebrow" style="display:inline-block;margin-bottom:1rem;">Step 0 of 12 — The Gates</div>
+      <h2>BEGIN<br><span style="color:var(--accent)">YOUR OATH</span></h2>
+      <p style="font-family:'DM Mono',monospace;font-size:.65rem;letter-spacing:.18em;text-transform:uppercase;color:var(--text-muted);">Create your builder identity</p>
+    </div>
+
+    <div class="input-group">
+      <label class="input-label">Email Address</label>
+      <input class="input-field" type="email" id="signupEmail" placeholder="you@college.edu"/>
+      <div class="input-glow"></div>
+      <div class="error-msg" id="signupEmailErr">⚠ Enter a valid email address</div>
+    </div>
+    <div class="input-group" style="position:relative;">
+      <label class="input-label">Create Password</label>
+      <input class="input-field" type="password" id="signupPw" placeholder="Forge a strong cipher..." oninput="updateStrength(this.value)"/>
+      <div class="input-glow"></div>
+      <div class="strength-bar">
+        <div class="strength-seg" id="str1"></div>
+        <div class="strength-seg" id="str2"></div>
+        <div class="strength-seg" id="str3"></div>
+        <div class="strength-seg" id="str4"></div>
+      </div>
+    </div>
+
+    <div class="feature-hint">
+      <span class="feature-hint-icon">🛡️</span>
+      <div class="feature-hint-text">
+        <strong>Your Profile</strong> will hold your builder rank, activity matrix, projects, and codex entries. Everything you build here becomes your living proof-of-work.
+      </div>
+    </div>
+
+    <button class="btn-forge" style="width:100%;margin-top:1.2rem;" onclick="handleSignup()">
+      <span>Forge My Identity ⚔️</span>
+    </button>
+    <div style="margin-top:.8rem;text-align:center;">
+      <button class="btn-ghost" style="width:100%" onclick="goToScreen('login')">Already have an account</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ SCREEN 4: ONBOARDING ═══════════════════════════════ -->
+<div class="screen" id="screen-onboard">
+  <div class="onboard-wrap">
+
+    <!-- Progress runes -->
+    <div class="rune-progress" id="runeProgress"></div>
+
+    <!-- Step container -->
+    <div id="stepContainer" style="width:100%;"></div>
+
+    <!-- Navigation -->
+    <div class="step-nav" style="margin-top:1rem;">
+      <button class="nav-arrow back-arrow" id="backBtn" onclick="prevStep()">
+        <span>←</span>
+      </button>
+      <a class="skip-link" onclick="nextStep()">skip</a>
+      <button class="nav-arrow" id="nextBtn" onclick="nextStep()">
+        <span>→</span>
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ SCREEN 5: SUCCESS ═══════════════════════════════ -->
+<div class="screen" id="screen-success">
+  <div class="success-wrap">
+    <span class="success-glyph">⚔️</span>
+    <div class="success-title">PSILOS<br><span style="color:var(--accent)">AWAKENED</span></div>
+    <p class="success-sub">
+      Your builder identity has been forged. You stand at the gates of the battlefield. The path to <em>Strategos</em> begins with every commit, every log, every review.
+    </p>
+    <div class="success-rank">
+      <div class="rank-badge">🪃 &nbsp;Psilos — The Skirmisher</div>
+    </div>
+    <div class="feature-hint" style="text-align:left;margin-bottom:1.5rem;animation:fadeUp .6s 1.2s both;opacity:0;">
+      <span class="feature-hint-icon">🗺️</span>
+      <div class="feature-hint-text">
+        <strong>What's next?</strong> Your dashboard has three zones — <strong>The Arena</strong> (project validation), <strong>The Codex</strong> (build logs), and <strong>The Beacon</strong> (opportunities). Start building and watch your rank rise.
+      </div>
+    </div>
+    <button class="btn-forge" style="animation:fadeUp .6s 1.4s both;opacity:0;" onclick="alert('Entering TROVE Dashboard...')">
+      <span>Enter TROVE →</span>
+    </button>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════ STATE ═══════════════════ */
+const html = document.documentElement;
+let currentScreen = 'landing';
+let currentStep = 0;
+let answers = {};
+let mx = 0, my = 0, rx = -200, ry = -200;
+
+/* ═══════════════════ ONBOARDING STEPS ═══════════════════ */
+const STEPS = [
+  {
+    id:'name',
+    glyph:'🪬',
+    num:'01',
+    question:'What shall we <em>call you</em>, builder?',
+    hint:'This becomes your display name across The Arena, The Codex, and your Builder Profile.',
+    type:'text',
+    placeholder:'Your builder name...',
+    featureHint:{icon:'🧬',text:'<strong>Builder Profile</strong> — Your name appears on your public Identity Card, rank badge, and all project submissions in The Arena.'}
+  },
+  {
+    id:'college',
+    glyph:'🏛️',
+    num:'02',
+    question:'Which <em>institution</em> forged you?',
+    hint:'Your college/university or professional workplace. Shown on your Identity Card.',
+    type:'text',
+    placeholder:'College name or Company...',
+    featureHint:{icon:'🏟️',text:'<strong>The Arena</strong> — Projects are tagged with your institution, making college-specific leaderboards possible.'}
+  },
+  {
+    id:'year',
+    glyph:'📅',
+    num:'03',
+    question:'Which <em>year of the campaign</em> are you in?',
+    hint:'Academic year or years of experience as a professional.',
+    type:'chips',
+    options:['1st Year','2nd Year','3rd Year','4th Year','Final Year','Alumni','Working Professional','Other'],
+    featureHint:{icon:'📡',text:'<strong>Broadcast Beacon</strong> — Year-specific hackathon and internship opportunities are filtered just for you.'}
+  },
+  {
+    id:'domain',
+    glyph:'⚙️',
+    num:'04',
+    question:'What are your <em>weapon specialisations</em>?',
+    hint:'Pick all that apply. These shape your tech stack identity and skill tags.',
+    type:'multi-chips',
+    options:['Full Stack','Frontend','Backend','Mobile','AI / ML','Cybersecurity','DevOps / Cloud','Blockchain','Data Science','UI / UX','Open Source','Embedded / IoT'],
+    featureHint:{icon:'🧬',text:'<strong>Identity Layer</strong> — Skill tags are publicly visible on your profile and used for teammate matching in The Beacon.'}
+  },
+  {
+    id:'experience',
+    glyph:'⚔️',
+    num:'05',
+    question:'How long have you been <em>on the battlefield</em>?',
+    hint:'Your overall coding / building experience — helps us set your starting difficulty.',
+    type:'chips',
+    options:['< 6 months','6–12 months','1–2 years','2–4 years','4+ years','Battle-hardened'],
+    featureHint:{icon:'🏟️',text:'<strong>Arena Ranking</strong> — Experience level is factored into your rank progression speed and project difficulty tagging.'}
+  },
+  {
+    id:'rank',
+    glyph:'🛡️',
+    num:'06',
+    question:'Choose your <em>starting rank</em> in the lore',
+    hint:'Self-declare where you stand. The community will validate through your work.',
+    type:'rank-select',
+    options:[
+      {icon:'🪃',name:'Psilos',desc:'Just beginning — curious and eager'},
+      {icon:'🛡️',name:'Hoplite',desc:'Know the basics, built a few things'},
+      {icon:'🐎',name:'Hippeis',desc:'Comfortable, have shipped projects'},
+      {icon:'🏹',name:'Ouragos',desc:'Led teams, consistent builder'},
+      {icon:'⚔️',name:'Lochagos',desc:'Mentors others, deep technical skill'},
+      {icon:'🗡️',name:'Taxiarch',desc:'Community pillar, prolific builder'},
+    ],
+    featureHint:{icon:'⚔️',text:'<strong>Military Progression</strong> — Your rank is a living signal of consistency. It grows through commits, reviews, blogs, and peer validation — not self-declaration alone.'}
+  },
+  {
+    id:'why',
+    glyph:'🔥',
+    num:'07',
+    question:'Why are you <em>entering the forge</em>?',
+    hint:'What brings you to TROVE? Select all that apply to you.',
+    type:'multi-chips',
+    options:['Build a real portfolio','Find serious teammates','Prove my technical skills','Get internship / job','Build in public','Join builder community','Win hackathons','All of the above'],
+    featureHint:{icon:'🎯',text:'<strong>Smart Matching</strong> — Your goals shape the AI teammate matching algorithm in The Beacon and opportunity recommendations.'}
+  },
+  {
+    id:'builds',
+    glyph:'🧱',
+    num:'08',
+    question:'Tell us about your <em>proudest build</em>.',
+    hint:'One project you shipped — what it was, what you learned. Be honest, even if small.',
+    type:'textarea',
+    placeholder:'I built a... it taught me...',
+    featureHint:{icon:'📜',text:'<strong>The Codex</strong> — Your first dev log entry. These build stories become your public engineering narrative on your profile.'}
+  },
+  {
+    id:'github',
+    glyph:'🐙',
+    num:'09',
+    question:"What's your <em>GitHub handle</em>?",
+    hint:'We pull your public activity to power the Activity Matrix on your profile.',
+    type:'text',
+    placeholder:'github.com/your-handle',
+    featureHint:{icon:'📡',text:'<strong>Activity Matrix</strong> — GitHub commits light up your daily builder matrix, the most visible part of your Identity Card.'}
+  },
+  {
+    id:'linkedin',
+    glyph:'💼',
+    num:'10',
+    question:"Your <em>LinkedIn URL</em> — optional but powerful.",
+    hint:'Syncs professional credibility with your builder identity on TROVE.',
+    type:'text',
+    placeholder:'linkedin.com/in/yourname',
+    featureHint:{icon:'🧬',text:'<strong>Cross-Platform Identity</strong> — LinkedIn data enriches your Identity Card and helps recruiters verify your TROVE rank.'}
+  },
+  {
+    id:'discovered',
+    glyph:'🗺️',
+    num:'11',
+    question:'How did you <em>discover the forge</em>?',
+    hint:'Helps us understand where builders come from.',
+    type:'chips',
+    options:['Friend / Classmate','LinkedIn','Twitter / X','Instagram','Discord / Reddit','College Club','Faculty / Professor','Hackathon','Just exploring','Other'],
+    featureHint:{icon:'📊',text:'<strong>Community Analytics</strong> — Anonymous discovery data helps us grow the builder community more effectively.'}
+  },
+  {
+    id:'commit',
+    glyph:'⚡',
+    num:'12',
+    question:'Make your <em>builder oath</em>.',
+    hint:'How consistently will you show up? This sets your starting Activity Matrix target.',
+    type:'chips',
+    options:['Daily builder','3–4x per week','Weekends only','Project-driven','Whenever inspired','ALL IN — no mercy'],
+    featureHint:{icon:'📡',text:'<strong>Activity Matrix</strong> — Your consistency pledge is your first public commitment. The matrix tracks every day you show up.'}
+  }
+];
+
+/* ═══════════════════ SCREEN MANAGEMENT ═══════════════════ */
+function goToScreen(name) {
+  const all = document.querySelectorAll('.screen');
+  const target = document.getElementById('screen-' + name);
+  const current = document.querySelector('.screen.active');
+
+  if (current) {
+    current.classList.remove('active');
+    current.classList.add('exit-up');
+    setTimeout(() => current.classList.remove('exit-up'), 500);
+  }
+
+  setTimeout(() => {
+    if (target) {
+      target.classList.add('active');
+      target.querySelector('input,textarea,button')?.focus?.();
+    }
+  }, 100);
+
+  currentScreen = name;
+
+  if (name === 'onboard') {
+    buildProgress();
+    renderStep(0);
+  }
+}
+
+/* ═══════════════════ BUILD PROGRESS BAR ═══════════════════ */
+function buildProgress() {
+  const container = document.getElementById('runeProgress');
+  container.innerHTML = '';
+  STEPS.forEach((s, i) => {
+    const pip = document.createElement('div');
+    pip.className = 'rune-pip';
+    pip.textContent = s.num;
+    pip.id = 'pip-' + i;
+    pip.onclick = () => { if (i <= currentStep) jumpToStep(i); };
+    container.appendChild(pip);
+    if (i < STEPS.length - 1) {
+      const line = document.createElement('div');
+      line.className = 'rune-line';
+      line.id = 'line-' + i;
+      container.appendChild(line);
+    }
+  });
+  updateProgress();
+}
+
+function updateProgress() {
+  STEPS.forEach((s, i) => {
+    const pip = document.getElementById('pip-' + i);
+    if (!pip) return;
+    pip.classList.remove('active','completed');
+    if (i < currentStep) pip.classList.add('completed');
+    else if (i === currentStep) pip.classList.add('active');
+
+    const line = document.getElementById('line-' + i);
+    if (line) {
+      line.classList.toggle('filled', i < currentStep);
+    }
+  });
+}
+
+/* ═══════════════════ RENDER STEP ═══════════════════ */
+function renderStep(idx, direction = 'right') {
+  const step = STEPS[idx];
+  const container = document.getElementById('stepContainer');
+
+  // Exit old content
+  const old = container.querySelector('.step-content.active');
+  if (old) {
+    old.classList.remove('active');
+    old.classList.add(direction === 'right' ? 'exit-left' : 'exit-right');
+    setTimeout(() => old.remove(), 300);
+  }
+
+  const div = document.createElement('div');
+  div.className = 'step-content';
+  div.dataset.stepId = step.id;
+
+  let inputHTML = '';
+  if (step.type === 'text') {
+    inputHTML = `<input class="step-input" id="si-${step.id}" type="text" placeholder="${step.placeholder}" value="${answers[step.id]||''}" oninput="answers['${step.id}']=this.value" onkeydown="handleKeyDown(event)"/>`;
+  } else if (step.type === 'textarea') {
+    const val = answers[step.id]||'';
+    inputHTML = `
+      <textarea class="step-textarea" id="si-${step.id}" maxlength="280" placeholder="${step.placeholder}" oninput="answers['${step.id}']=this.value;updateCharCount(this)">${val}</textarea>
+      <div class="char-count" id="cc-${step.id}">${val.length}/280</div>
+    `;
+  } else if (step.type === 'chips') {
+    const chips = step.options.map(o =>
+      `<div class="chip${answers[step.id]===o?' selected':''}" onclick="selectChip(this,'${step.id}','${o}')"><span>${o}</span></div>`
+    ).join('');
+    inputHTML = `<div class="chip-grid">${chips}</div>`;
+  } else if (step.type === 'multi-chips') {
+    const selected = answers[step.id]||[];
+    const chips = step.options.map(o =>
+      `<div class="chip multi${selected.includes(o)?' selected':''}" onclick="toggleChip(this,'${step.id}','${o}')"><span>${o}</span></div>`
+    ).join('');
+    inputHTML = `<div class="chip-grid">${chips}</div>`;
+  } else if (step.type === 'rank-select') {
+    const cards = step.options.map(o =>
+      `<div class="rank-sel-card${answers[step.id]===o.name?' selected':''}" onclick="selectRank(this,'${step.id}','${o.name}')">
+        <div class="rsc-icon">${o.icon}</div>
+        <div class="rsc-name">${o.name}</div>
+        <div class="rsc-desc">${o.desc}</div>
+      </div>`
+    ).join('');
+    inputHTML = `<div class="rank-select-grid">${cards}</div>`;
+  }
+
+  const hint = step.featureHint
+    ? `<div class="feature-hint"><span class="feature-hint-icon">${step.featureHint.icon}</span><div class="feature-hint-text">${step.featureHint.text}</div></div>`
+    : '';
+
+  div.innerHTML = `
+    <div class="step-num">${step.num} / 12</div>
+    <span class="step-glyph">${step.glyph}</span>
+    <h2 class="step-question">${step.question}</h2>
+    <p class="step-hint">${step.hint}</p>
+    ${inputHTML}
+    ${hint}
+  `;
+
+  container.appendChild(div);
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => { div.classList.add('active'); });
+  });
+
+  // Auto-focus text inputs
+  if (step.type === 'text' || step.type === 'textarea') {
+    setTimeout(() => document.getElementById('si-'+step.id)?.focus(), 400);
+  }
+
+  // Back button
+  document.getElementById('backBtn').style.opacity = idx === 0 ? '.3' : '1';
+  document.getElementById('backBtn').style.pointerEvents = idx === 0 ? 'none' : 'all';
+}
+
+/* ═══════════════════ STEP NAVIGATION ═══════════════════ */
+function nextStep() {
+  addRipple(document.getElementById('nextBtn'));
+  if (currentStep < STEPS.length - 1) {
+    currentStep++;
+    updateProgress();
+    renderStep(currentStep, 'right');
+  } else {
+    // Done — go to success
+    goToScreen('success');
+  }
+}
+
+function prevStep() {
+  if (currentStep > 0) {
+    addRipple(document.getElementById('backBtn'));
+    currentStep--;
+    updateProgress();
+    renderStep(currentStep, 'left');
+  }
+}
+
+function jumpToStep(idx) {
+  if (idx === currentStep) return;
+  const dir = idx > currentStep ? 'right' : 'left';
+  currentStep = idx;
+  updateProgress();
+  renderStep(currentStep, dir);
+}
+
+/* ═══════════════════ INPUT HELPERS ═══════════════════ */
+function selectChip(el, id, val) {
+  answers[id] = val;
+  el.closest('.chip-grid').querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  addRipple(el);
+  // Auto-advance after brief delay
+  setTimeout(nextStep, 400);
+}
+
+function toggleChip(el, id, val) {
+  if (!answers[id]) answers[id] = [];
+  const arr = answers[id];
+  const idx = arr.indexOf(val);
+  if (idx > -1) { arr.splice(idx, 1); el.classList.remove('selected'); }
+  else { arr.push(val); el.classList.add('selected'); addRipple(el); }
+}
+
+function selectRank(el, id, val) {
+  answers[id] = val;
+  el.closest('.rank-select-grid').querySelectorAll('.rank-sel-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  addRipple(el);
+  setTimeout(nextStep, 500);
+}
+
+function updateCharCount(el) {
+  const id = el.id.replace('si-','');
+  const cc = document.getElementById('cc-'+id);
+  if (!cc) return;
+  const n = el.value.length;
+  cc.textContent = n + '/280';
+  cc.className = 'char-count' + (n > 250 ? ' over' : n > 200 ? ' warn' : '');
+}
+
+function handleKeyDown(e) {
+  if (e.key === 'Enter') { e.preventDefault(); nextStep(); }
+}
+
+/* ═══════════════════ KEYBOARD EVENTS ═══════════════════ */
+document.addEventListener('keydown', e => {
+  const keyEl = document.getElementById('keyEnter');
+  if (e.key === 'Enter') {
+    keyEl.classList.add('pressed');
+    if (currentScreen === 'onboard') {
+      const active = document.querySelector('.step-content.active');
+      if (active) {
+        const sid = active.dataset.stepId;
+        const step = STEPS.find(s => s.id === sid);
+        if (step && step.type === 'text') nextStep();
+      }
+    } else if (currentScreen === 'login') {
+      handleLogin();
+    } else if (currentScreen === 'signup') {
+      handleSignup();
+    }
+    setTimeout(() => keyEl.classList.remove('pressed'), 200);
+  }
+  // Arrow key navigation
+  if (currentScreen === 'onboard') {
+    if (e.key === 'ArrowRight') nextStep();
+    if (e.key === 'ArrowLeft') prevStep();
+  }
+});
+
+/* ═══════════════════ AUTH HANDLERS ═══════════════════ */
+function handleLogin() {
+  const email = document.getElementById('loginEmail');
+  const pw = document.getElementById('loginPw');
+  let ok = true;
+  if (!email.value.includes('@')) {
+    email.classList.add('error'); document.getElementById('loginEmailErr').classList.add('show'); ok=false;
+    setTimeout(()=>{email.classList.remove('error');},600);
+  } else { email.classList.remove('error'); document.getElementById('loginEmailErr').classList.remove('show'); }
+  if (!pw.value) {
+    pw.classList.add('error'); document.getElementById('loginPwErr').classList.add('show'); ok=false;
+    setTimeout(()=>{pw.classList.remove('error');},600);
+  } else { pw.classList.remove('error'); document.getElementById('loginPwErr').classList.remove('show'); }
+  if (ok) goToScreen('success');
+}
+
+function handleSignup() {
+  const email = document.getElementById('signupEmail');
+  const pw = document.getElementById('signupPw');
+  let ok = true;
+  if (!email.value.includes('@')) {
+    email.classList.add('error'); document.getElementById('signupEmailErr').classList.add('show'); ok=false;
+    setTimeout(()=>{email.classList.remove('error');},600);
+  } else { email.classList.remove('error'); document.getElementById('signupEmailErr').classList.remove('show'); }
+  if (!pw.value || pw.value.length < 6) {
+    pw.classList.add('error'); ok=false;
+    setTimeout(()=>{pw.classList.remove('error');},600);
+  }
+  if (ok) goToScreen('onboard');
+}
+
+/* ═══════════════════ PASSWORD STRENGTH ═══════════════════ */
+function updateStrength(val) {
+  const segs = [document.getElementById('str1'),document.getElementById('str2'),document.getElementById('str3'),document.getElementById('str4')];
+  segs.forEach(s=>{s.className='strength-seg';});
+  if (!val) return;
+  let score = 0;
+  if (val.length >= 6) score++;
+  if (val.length >= 10) score++;
+  if (/[^a-zA-Z0-9]/.test(val)) score++;
+  if (/[A-Z]/.test(val) && /[0-9]/.test(val)) score++;
+  const cls = score <= 1 ? 'weak' : score <= 2 ? 'medium' : 'strong';
+  for (let i=0;i<score;i++) segs[i].classList.add(cls);
+}
+
+/* Show/hide password */
+document.getElementById('togglePw')?.addEventListener('click', ()=>{
+  const pw = document.getElementById('loginPw');
+  pw.type = pw.type === 'password' ? 'text' : 'password';
+  document.getElementById('togglePw').textContent = pw.type === 'password' ? '👁' : '🙈';
+});
+
+/* ═══════════════════ RIPPLE ═══════════════════ */
+function addRipple(el) {
+  const r = document.createElement('div');
+  r.className = 'ripple';
+  const rect = el.getBoundingClientRect();
+  const size = Math.max(rect.width, rect.height);
+  r.style.cssText = `width:${size}px;height:${size}px;left:${rect.width/2 - size/2}px;top:${rect.height/2 - size/2}px;`;
+  el.style.position = 'relative';
+  el.appendChild(r);
+  setTimeout(() => r.remove(), 700);
+}
+
+// Add ripple to all buttons
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.btn-forge,.btn-ghost,.nav-arrow,.chip,.rank-sel-card');
+  if (btn) addRipple(btn);
+});
+
+/* ═══════════════════ THEME TOGGLE ═══════════════════ */
+document.getElementById('themeToggle').addEventListener('click', () => {
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  updateCanvasColors();
+});
+
+/* ═══════════════════ CURSOR ═══════════════════ */
+const cursorEl = document.getElementById('cursor');
+const cursorRing = document.getElementById('cursorRing');
+
+document.addEventListener('mousemove', e => {
+  mx = e.clientX; my = e.clientY;
+  cursorEl.style.left = mx + 'px'; cursorEl.style.top = my + 'px';
+});
+document.addEventListener('mousedown', () => cursorRing.classList.add('clicked'));
+document.addEventListener('mouseup', () => { cursorRing.classList.remove('clicked'); });
+
+document.querySelectorAll('a,button,.chip,.rank-sel-card,.nav-arrow,.rank-pip').forEach(el => {
+  el.addEventListener('mouseenter', () => cursorRing.classList.add('expanded'));
+  el.addEventListener('mouseleave', () => cursorRing.classList.remove('expanded'));
+});
+
+function animateCursor() {
+  rx += (mx - rx) * .12; ry += (my - ry) * .12;
+  cursorRing.style.left = rx + 'px'; cursorRing.style.top = ry + 'px';
+  requestAnimationFrame(animateCursor);
+}
+animateCursor();
+
+/* ═══════════════════ 3D CANVAS ═══════════════════ */
+const canvas = document.getElementById('bg-canvas');
+const ctx = canvas.getContext('2d');
+let W, H, scrollOff = 0;
+
+function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+window.addEventListener('resize', resize); resize();
+
+function getColors() {
+  return html.getAttribute('data-theme') === 'dark'
+    ? {p:'rgba(146,220,229,', l:'rgba(146,220,229,', g:'rgba(146,220,229,'}
+    : {p:'rgba(0,110,120,', l:'rgba(0,110,120,', g:'rgba(0,100,110,'};
+}
+let colCache = getColors();
+function updateCanvasColors() { colCache = getColors(); }
+
+// Particles
+class Particle {
+  constructor() { this.reset(true); }
+  reset(init=false) {
+    this.x = Math.random() * W;
+    this.y = init ? Math.random() * H : H + 20;
+    this.z = Math.random() * 500 + 100;
+    this.vx = (Math.random()-.5) * .2;
+    this.vy = -Math.random() * .35 - .08;
+    this.r  = Math.random() * 1.4 + .4;
+    this.a  = Math.random() * .5 + .1;
+    this.life = 0; this.maxLife = Math.random()*500+200;
+  }
+  update() {
+    this.x += this.vx + (mx/W-.5)*.06;
+    this.y += this.vy + (my/H-.5)*.04;
+    this.z += (Math.random()-.5)*.3;
+    this.life++;
+    const fov = 400, scale = fov/(fov+this.z);
+    this.sx = (this.x-W/2)*scale+W/2;
+    this.sy = (this.y-H/2)*scale+H/2;
+    this.sr = this.r * scale;
+    this.sa = this.a * Math.min(this.life/60,1) * (1-this.life/this.maxLife);
+    if (this.y<-20||this.life>this.maxLife) this.reset();
+  }
+  draw() {
+    ctx.beginPath();
+    ctx.arc(this.sx,this.sy,Math.max(.1,this.sr),0,Math.PI*2);
+    ctx.fillStyle = colCache.p + this.sa + ')';
+    ctx.fill();
+  }
+}
+
+const PCOUNT = 80;
+let particles = Array.from({length:PCOUNT},()=>new Particle());
+
+function drawGrid() {
+  const horizon = H*.5;
+  ctx.save();
+  for (let i=-12;i<=12;i++) {
+    const wx = i*90, x1=W/2+wx, factor=H/(H-horizon);
+    const x2=W/2+wx*factor*2.5, y2=H;
+    const a = Math.max(0,.1-Math.abs(i)*.007);
+    ctx.beginPath();ctx.moveTo(x1,horizon);ctx.lineTo(x2,y2);
+    ctx.strokeStyle=colCache.g+a+')';ctx.lineWidth=.6;ctx.stroke();
+  }
+  for (let j=0;j<=8;j++) {
+    const t=j/8, y=horizon+(H-horizon)*Math.pow(t,1.6);
+    const spread=180+(y-horizon)/(H-horizon)*W*1.2;
+    ctx.beginPath();ctx.moveTo(W/2-spread,y);ctx.lineTo(W/2+spread,y);
+    ctx.strokeStyle=colCache.g+(t*.1)+')';ctx.lineWidth=.6;ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawConnections() {
+  for (let i=0;i<particles.length;i++) {
+    for (let j=i+1;j<particles.length;j++) {
+      const p1=particles[i],p2=particles[j];
+      const dx=p1.sx-p2.sx,dy=p1.sy-p2.sy;
+      const d=Math.sqrt(dx*dx+dy*dy);
+      if (d<80) {
+        ctx.beginPath();ctx.moveTo(p1.sx,p1.sy);ctx.lineTo(p2.sx,p2.sy);
+        ctx.strokeStyle=colCache.l+(1-d/80)*.08+')';ctx.lineWidth=.5;ctx.stroke();
+      }
+    }
+  }
+}
+
+// Floating glyphs on canvas
+const GLYPHS = ['⚔','🛡','🏹','⚡','🔥','🗡','🏛','🎯'];
+class FloatingGlyph {
+  constructor() { this.reset(); }
+  reset() {
+    this.x=Math.random()*W; this.y=H+50;
+    this.vy=-Math.random()*.4-.1;
+    this.alpha=0; this.size=Math.random()*14+10;
+    this.glyph=GLYPHS[Math.floor(Math.random()*GLYPHS.length)];
+    this.life=0; this.maxLife=Math.random()*600+300;
+    this.drift=(Math.random()-.5)*.2;
+  }
+  update() {
+    this.y+=this.vy; this.x+=this.drift; this.life++;
+    this.alpha=Math.min(this.life/80,.12)*(1-this.life/this.maxLife);
+    if (this.life>this.maxLife) this.reset();
+  }
+  draw() {
+    ctx.save();ctx.globalAlpha=this.alpha;
+    ctx.font=this.size+'px serif';ctx.textAlign='center';
+    ctx.fillText(this.glyph,this.x,this.y);ctx.restore();
+  }
+}
+const glyphs = Array.from({length:8},()=>new FloatingGlyph());
+glyphs.forEach((g,i)=>{ g.y=Math.random()*H; g.life=Math.random()*g.maxLife; });
+
+function animate() {
+  ctx.clearRect(0,0,W,H);
+  drawGrid();
+  drawConnections();
+  particles.forEach(p=>{p.update();p.draw();});
+  glyphs.forEach(g=>{g.update();g.draw();});
+  requestAnimationFrame(animate);
+}
+animate();
+
+/* ═══════════════════ AMBIENT PARTICLES (DOM) ═══════════════════ */
+function spawnAmbient() {
+  const colors = ['var(--accent)','var(--accent2)','var(--c-cream)'];
+  const el = document.createElement('div');
+  el.className = 'ambient-particle';
+  const size = Math.random()*4+1;
+  const dur  = Math.random()*12+8;
+  el.style.cssText = `
+    width:${size}px;height:${size}px;
+    left:${Math.random()*100}vw;
+    bottom:-10px;
+    background:${colors[Math.floor(Math.random()*colors.length)]};
+    animation-duration:${dur}s;
+    animation-delay:${Math.random()*2}s;
+  `;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), (dur+2)*1000);
+}
+setInterval(spawnAmbient, 800);
+
+/* ═══════════════════ MOUSE PARALLAX on SCREEN CONTENT ═══════════════════ */
+document.addEventListener('mousemove', e => {
+  const x=(e.clientX/window.innerWidth-.5);
+  const y=(e.clientY/window.innerHeight-.5);
+  document.querySelectorAll('.auth-title,.success-title,.login-header h2').forEach(el => {
+    el.style.transform=`perspective(800px) rotateY(${x*5}deg) rotateX(${-y*3}deg)`;
+  });
+  document.querySelectorAll('.step-glyph').forEach(el=>{
+    el.style.transform=`translateY(${Math.sin(Date.now()*.002)*8}px) rotate(${x*8}deg)`;
+  });
+});
+
+/* ═══════════════════ TYPING ANIMATION on HERO ═══════════════════ */
+// Subtle typewriter on auth-eyebrow
+const eyebrow = document.querySelector('.auth-eyebrow');
+if (eyebrow) {
+  const text = eyebrow.textContent;
+  eyebrow.textContent = '';
+  let i=0;
+  const type = ()=>{
+    if(i<text.length){eyebrow.textContent+=text[i++];setTimeout(type,55);}
+  };
+  setTimeout(type,400);
+}
+
+/* ═══════════════════ DYNAMIC GLYPH ROTATION ═══════════════════ */
+let glyphAngle=0;
+function animateGlyphs(){
+  glyphAngle+=.01;
+  document.querySelectorAll('.step-glyph').forEach(el=>{
+    el.style.transform=`translateY(${Math.sin(glyphAngle)*8}px) rotate(${Math.sin(glyphAngle*.7)*6}deg)`;
+  });
+  requestAnimationFrame(animateGlyphs);
+}
+animateGlyphs();
+
+
+
+/* ═══════════════════ TOUCH SWIPE ═══════════════════ */
+let touchStartX=0;
+document.addEventListener('touchstart',e=>{touchStartX=e.touches[0].clientX;},{passive:true});
+document.addEventListener('touchend',e=>{
+  const dx=e.changedTouches[0].clientX-touchStartX;
+  if (currentScreen==='onboard'){
+    if(dx<-60)nextStep();
+    else if(dx>60)prevStep();
+  }
+},{passive:true});
+
+/* ═══════════════════ CHIP KEYBOARD NAV ═══════════════════ */
+document.addEventListener('keydown', e => {
+  if (currentScreen!=='onboard') return;
+  const chips=[...document.querySelectorAll('.chip:not(.multi)')];
+  if(!chips.length)return;
+  if(e.key==='1'&&chips[0])chips[0].click();
+  if(e.key==='2'&&chips[1])chips[1].click();
+  if(e.key==='3'&&chips[2])chips[2].click();
+  if(e.key==='4'&&chips[3])chips[3].click();
+  if(e.key==='5'&&chips[4])chips[4].click();
+  if(e.key==='6'&&chips[5])chips[5].click();
+});
+</script>
+</body>
+</html>
