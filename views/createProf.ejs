@@ -794,7 +794,7 @@ from{opacity:0;transform:translateY(8px);}}
       <span>Forge My Identity ⚔️</span>
     </button>
     <div style="margin-top:.8rem;text-align:center;">
-      <button class="btn-ghost" style="width:100%" onclick="goToScreen('login')">Already have an account</button>
+    <a href="/signin"><button class="btn-ghost" style="width:100%">Already have an account</button></a>
     </div>
   </div>
 </div>
@@ -840,7 +840,7 @@ from{opacity:0;transform:translateY(8px);}}
         <strong>What's next?</strong> Your dashboard has three zones — <strong>The Arena</strong> (project validation), <strong>The Codex</strong> (build logs), and <strong>The Beacon</strong> (opportunities). Start building and watch your rank rise.
       </div>
     </div>
-    <button class="btn-forge" style="animation:fadeUp .6s 1.4s both;opacity:0;" onclick="alert('Entering TROVE Dashboard...')">
+    <button class="btn-forge" style="animation:fadeUp .6s 1.4s both;opacity:0;" onclick="submitProfile()">
       <span>Enter TROVE →</span>
     </button>
   </div>
@@ -1247,7 +1247,13 @@ function handleSignup() {
     pw.classList.add('error'); ok=false;
     setTimeout(()=>{pw.classList.remove('error');},600);
   }
-  if (ok) goToScreen('onboard');
+  if (ok) {
+    // Store email and password in answers for later submission
+    answers.email = email.value.trim();
+    answers.password = pw.value;
+    answers.username = email.value.split('@')[0]; // Generate username from email
+    goToScreen('onboard');
+  }
 }
 
 /* ═══════════════════ PASSWORD STRENGTH ═══════════════════ */
@@ -1521,6 +1527,66 @@ document.addEventListener('keydown', e => {
   if(e.key==='5'&&chips[4])chips[4].click();
   if(e.key==='6'&&chips[5])chips[5].click();
 });
+
+/* ═══════════════════ PROFILE SUBMISSION ═══════════════════ */
+function submitProfile() {
+  // Validate all required fields are filled
+  const required = ['name', 'college', 'year', 'domain', 'experience', 'rank', 'why', 'builds', 'github', 'discovered', 'commit'];
+  const missing = required.filter(field => !answers[field]);
+  
+  if (missing.length > 0) {
+    alert('Please complete all required fields before submitting.');
+    return;
+  }
+
+  // Prepare form data for submission
+  const formData = new FormData();
+  formData.append('email', answers.email);
+  formData.append('password', answers.password);
+  formData.append('username', answers.username);
+  formData.append('name', answers.name);
+  formData.append('college', answers.college);
+  formData.append('year', answers.year);
+  formData.append('experience', answers.experience);
+  formData.append('rank', answers.rank);
+  formData.append('builds', answers.builds);
+  formData.append('github', answers.github);
+  formData.append('linkedin', answers.linkedin || '');
+  formData.append('discovered', answers.discovered);
+  formData.append('commit', answers.commit);
+  
+  // Handle multi-select arrays (domain and why)
+  if (Array.isArray(answers.domain)) {
+    answers.domain.forEach(d => formData.append('domain', d));
+  } else {
+    formData.append('domain', answers.domain);
+  }
+  
+  if (Array.isArray(answers.why)) {
+    answers.why.forEach(w => formData.append('why', w));
+  } else {
+    formData.append('why', answers.why);
+  }
+
+  // Submit to backend
+  fetch('/complete-onboarding', {
+    method: 'POST',
+    body: formData
+  })
+  .then(res => {
+    if (res.ok) {
+      window.location.href = '/home';
+    } else {
+      return res.json().then(data => {
+        alert('Error: ' + (data.error || 'Failed to save profile'));
+      });
+    }
+  })
+  .catch(err => {
+    console.error('Submission error:', err);
+    alert('Failed to save profile. Please try again.');
+  });
+}
 </script>
 </body>
 </html>

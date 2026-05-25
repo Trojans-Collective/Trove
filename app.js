@@ -118,11 +118,20 @@ app.post("/signin", (req, res, next) => {
 
 app.post("/signup", async (req,res) =>{
     try{
-        let { username,email,password} = req.body;
-        const newUser = new User({email,username});
-        const registeredUser = await User.register(newUser,password);
+        let { username, email, password } = req.body;
+        
+        // Check if user already exists
+        const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+        if (existingUser) {
+            req.flash("error", "Email or username already in use");
+            return res.redirect("/signin");
+        }
+
+        const newUser = new User({ email, username });
+        const registeredUser = await User.register(newUser, password);
         console.log("User registered:", registeredUser);
-        req.login(registeredUser,(err) =>{
+        
+        req.login(registeredUser, (err) =>{
             if(err){
                 console.log("Login error after signup:", err);
                 return res.redirect("/signin");
@@ -131,7 +140,78 @@ app.post("/signup", async (req,res) =>{
         });  
     }catch(e){
         console.log("Signup error:", e.message);
+        req.flash("error", e.message);
         res.redirect("/signin");
+    }
+});
+
+// Complete onboarding - saves profile information collected from createProf.ejs
+app.post("/complete-onboarding", async (req, res) => {
+    try {
+        // Get data from form - handling multi-select arrays
+        const { 
+            email, 
+            password, 
+            username,
+            name, 
+            college, 
+            year, 
+            domain, 
+            experience, 
+            rank, 
+            why, 
+            builds, 
+            github, 
+            linkedin, 
+            discovered, 
+            commit 
+        } = req.body;
+
+        // Convert single values to arrays if needed (FormData sends multiple values as array)
+        const domainArray = Array.isArray(domain) ? domain : [domain].filter(d => d);
+        const whyArray = Array.isArray(why) ? why : [why].filter(w => w);
+
+        // Create new user with email and password if not already signed up
+        const newUser = new User({
+            email: email.toLowerCase().trim(),
+            username: username || email.split('@')[0], // fallback username
+            displayName: name,
+            institution: {
+                name: college,
+                type: "college"
+            },
+            academicYear: year,
+            domains: domainArray,
+            experienceRange: experience,
+            selfDeclaredRank: rank,
+            primaryGoals: whyArray,
+            firstBuildStory: builds,
+            githubHandle: github,
+            linkedinUrl: linkedin || '',
+            discoveredVia: discovered,
+            consistencyPledge: commit,
+            onboardingComplete: true
+        });
+
+        // Register user with password using passport-local-mongoose
+        const registeredUser = await User.register(newUser, password);
+        console.log("User registered with onboarding:", registeredUser);
+
+        // Auto-login after registration
+        req.login(registeredUser, (err) => {
+            if (err) {
+                console.log("Login error after onboarding:", err);
+                return res.redirect("/signin");
+            }
+            res.redirect("/home");
+        });
+
+    } catch (e) {
+        console.log("Onboarding error:", e.message);
+        res.status(400).json({ 
+            success: false, 
+            error: e.message 
+        });
     }
 });
 
@@ -161,4 +241,4 @@ app.listen(8080, () => {
 
 
 
-//#000000,#92DCE5,#EEE5E9,#7C7C7C,#D64933...this should be the color palette and make landing page for both dark and light theme with a cool animation toggle with the given color scheme only. 
+//#000000,#92DCE5,#EEE5E9,#7C7C7C,#D64933...this should be the color palette 
